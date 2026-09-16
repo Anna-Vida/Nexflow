@@ -651,3 +651,9 @@ footer p {
     width: 100%;
   }
 }
+
+.nav-button-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
