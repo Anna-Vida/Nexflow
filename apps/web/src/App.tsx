@@ -1,121 +1,221 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
-
+function WorkflowPreview() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="workflow-preview">
+      <div className="canvas-grid" />
+
+      <div className="workflow-node webhook-node">
+        <div className="node-icon">↗</div>
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+          <span className="node-label">TRIGGER</span>
+          <strong>Webhook</strong>
+          <small>Request received</small>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <span className="node-status success">✓</span>
+      </div>
 
-      <div className="ticks"></div>
+      <div className="connector connector-one" />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      <div className="workflow-node condition-node">
+        <div className="node-icon">◇</div>
+        <div>
+          <span className="node-label">LOGIC</span>
+          <strong>Condition</strong>
+          <small>amount &gt; 10,000</small>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        <span className="node-status success">✓</span>
+      </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <div className="connector connector-two" />
+
+      <div className="workflow-node api-node">
+        <div className="node-icon">{'{ }'}</div>
+        <div>
+          <span className="node-label">ACTION</span>
+          <strong>HTTP Request</strong>
+          <small>POST /api/notify</small>
+        </div>
+        <span className="node-status running" />
+      </div>
+
+      <div className="execution-pill">
+        <span className="execution-dot" />
+        Workflow running
+      </div>
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <div className="app">
+      <nav className="navbar">
+        <a className="brand" href="/">
+          <span className="brand-mark">
+            <span />
+            <span />
+          </span>
+          <span>NexFlow</span>
+        </a>
+
+        <div className="nav-links">
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How it works</a>
+          <a
+            href="https://github.com/Anna-Vida/Nexflow"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
+        </div>
+
+        <button className="nav-button">Open workspace</button>
+      </nav>
+
+      <main>
+        <section className="hero-section">
+          <div className="hero-copy">
+            <div className="eyebrow">
+              <span className="eyebrow-dot" />
+              Visual workflow automation
+            </div>
+
+            <h1>
+              Automate work.
+              <span> Visually.</span>
+            </h1>
+
+            <p className="hero-description">
+              Design, connect, and execute powerful workflows from one visual
+              workspace. No repetitive work. Just flow.
+            </p>
+
+            <div className="hero-actions">
+              <button className="primary-button">
+                Start building
+                <span>→</span>
+              </button>
+
+              <a
+                className="secondary-button"
+                href="https://github.com/Anna-Vida/Nexflow"
+                target="_blank"
+                rel="noreferrer"
+              >
+                View on GitHub
+              </a>
+            </div>
+
+            <div className="hero-meta">
+              <div>
+                <span className="meta-check">✓</span>
+                Open source
+              </div>
+              <div>
+                <span className="meta-check">✓</span>
+                Built with TypeScript
+              </div>
+              <div>
+                <span className="meta-check">✓</span>
+                Free to use
+              </div>
+            </div>
+          </div>
+
+          <div className="hero-visual">
+            <div className="visual-glow" />
+            <WorkflowPreview />
+          </div>
+        </section>
+
+        <section className="stats-strip">
+          <div className="stat">
+            <strong>Visual</strong>
+            <span>Node-based builder</span>
+          </div>
+
+          <div className="stat-divider" />
+
+          <div className="stat">
+            <strong>Real-time</strong>
+            <span>Live execution</span>
+          </div>
+
+          <div className="stat-divider" />
+
+          <div className="stat">
+            <strong>Flexible</strong>
+            <span>API integrations</span>
+          </div>
+
+          <div className="stat-divider" />
+
+          <div className="stat">
+            <strong>Reliable</strong>
+            <span>Retries & queues</span>
+          </div>
+        </section>
+
+        <section className="features-section" id="features">
+          <div className="section-heading">
+            <div className="eyebrow">BUILT FOR AUTOMATION</div>
+            <h2>From an idea to an automated workflow.</h2>
+            <p>
+              NexFlow will connect triggers, logic, APIs, and actions into
+              workflows that execute automatically.
+            </p>
+          </div>
+
+          <div className="feature-grid">
+            <article className="feature-card">
+              <span className="feature-number">01</span>
+              <div className="feature-icon">⌁</div>
+              <h3>Visual builder</h3>
+              <p>
+                Build automation flows by connecting nodes instead of writing
+                every integration from scratch.
+              </p>
+            </article>
+
+            <article className="feature-card">
+              <span className="feature-number">02</span>
+              <div className="feature-icon">⚡</div>
+              <h3>Real-time execution</h3>
+              <p>
+                Watch every workflow step execute live and immediately see what
+                succeeds or fails.
+              </p>
+            </article>
+
+            <article className="feature-card">
+              <span className="feature-number">03</span>
+              <div className="feature-icon">↗</div>
+              <h3>API integrations</h3>
+              <p>
+                Connect external services with HTTP requests, webhooks, and
+                reusable workflow variables.
+              </p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <a className="brand footer-brand" href="/">
+          <span className="brand-mark">
+            <span />
+            <span />
+          </span>
+          <span>NexFlow</span>
+        </a>
+
+        <p>Visual automation engine built from the ground up.</p>
+
+        <span>© 2026 NexFlow</span>
+      </footer>
+    </div>
   )
 }
 
