@@ -73,6 +73,8 @@ export type WorkflowNode = Node<WorkflowNodeData>
 
 export type WorkflowDocument = {
   version: 1
+  remoteId?: string
+  revision?: number
   name: string
   updatedAt: string
   nodes: WorkflowNode[]

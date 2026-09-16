@@ -20,7 +20,7 @@ import {
 } from '@xyflow/react'
 import NodeConfigPanel from '../components/NodeConfigPanel'
 import { executionSocket } from '../workflow/executionSocket'
-import { executeWorkflowRemote } from '../workflow/workflowApi'
+import { executeWorkflowRemote, saveWorkflowRemote } from '../workflow/workflowApi'
 import type {
   NodeKind,
   NodeRuntimeState,
@@ -305,8 +305,11 @@ function WorkspacePage() {
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState(
-    savedWorkflow ? 'Saved locally' : 'Unsaved',
+    savedWorkflow?.revision ? `Saved · v${savedWorkflow.revision}` : savedWorkflow ? 'Saved locally' : 'Unsaved',
   )
+  const [workflowId, setWorkflowId] = useState<string | undefined>(savedWorkflow?.remoteId)
+  const [workflowRevision, setWorkflowRevision] = useState(savedWorkflow?.revision ?? 0)
+  const [isSaving, setIsSaving] = useState(false)
   const [runtimeStates, setRuntimeStates] = useState<Record<string, NodeRuntimeState>>({})
   const [isRunning, setIsRunning] = useState(false)
   const [runState, setRunState] = useState<'ready' | 'running' | 'success' | 'failed'>('ready')
@@ -411,7 +414,9 @@ function WorkspacePage() {
     markUnsaved()
   }
 
-  const saveWorkflow = () => {
+  const saveWorkflow = async () => {
+    if (isSaving) return
+
     const invalidNodes = nodes
       .map((node) => ({
         node,
@@ -428,35 +433,31 @@ function WorkspacePage() {
       return
     }
 
-    const workflow: WorkflowDocument = {
-      version: 1,
-      name: 'Untitled workflow',
-      updatedAt: new Date().toISOString(),
+    setIsSaving(true)
+    setSaveStatus('Saving...')
 
-      nodes: nodes.map((node) => ({
-        id: node.id,
-        type: node.type,
-        position: node.position,
-        data: node.data,
-      })),
+    try {
+      const result = await saveWorkflowRemote(workflowId, 'Untitled workflow', nodes, edges)
+      setWorkflowId(result.workflowId)
+      setWorkflowRevision(result.version)
 
-      edges: edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
-        animated: edge.animated,
-        markerEnd: edge.markerEnd,
-      })),
+      const workflow: WorkflowDocument = {
+        version: 1,
+        remoteId: result.workflowId,
+        revision: result.version,
+        name: 'Untitled workflow',
+        updatedAt: result.updatedAt,
+        nodes,
+        edges,
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(workflow, null, 2))
+      setSaveStatus(`Saved · v${result.version}`)
+    } catch (error) {
+      setSaveStatus(error instanceof Error ? error.message : 'Save failed')
+    } finally {
+      setIsSaving(false)
     }
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(workflow, null, 2),
-    )
-
-    setSaveStatus('Saved locally')
   }
 
   const handleNodesDelete = (deletedNodes: WorkflowNode[]) => {
@@ -545,7 +546,7 @@ function WorkspacePage() {
         )
       })
 
-      const result = await executeWorkflowRemote(executionId, nodes, edges, testInput)
+      const result = await executeWorkflowRemote(executionId, workflowId, nodes, edges, testInput)
       // Reconcile the final state if a socket event was missed during execution.
       setRuntimeStates(Object.fromEntries(result.events.map((event) => [
         event.nodeId,
@@ -580,7 +581,7 @@ function WorkspacePage() {
 
           <div className="workflow-title">
             <strong>Untitled workflow</strong>
-            <span>Draft</span>
+            <span>{workflowRevision > 0 ? `v${workflowRevision}` : 'Draft'}</span>
           </div>
         </div>
 
@@ -588,7 +589,7 @@ function WorkspacePage() {
           <span className="saved-status">
             <span
               className={
-                saveStatus === 'Saved locally'
+                saveStatus.startsWith('Saved')
                   ? 'saved-dot'
                   : 'unsaved-dot'
               }
@@ -600,6 +601,7 @@ function WorkspacePage() {
           <button
             className="workspace-secondary-button"
             onClick={saveWorkflow}
+            disabled={isSaving}
           >
             Save
           </button>

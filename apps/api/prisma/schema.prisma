@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Workflow {
+  id             String            @id @default(uuid()) @db.Uuid
+  name           String            @default("Untitled workflow")
+  currentVersion Int               @default(0)
+
+  versions       WorkflowVersion[]
+  executions     Execution[]
+
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model WorkflowVersion {
+  id         String    @id @default(uuid()) @db.Uuid
+  workflowId String    @db.Uuid
+  version    Int
+
+  nodes      Json
+  edges      Json
+
+  workflow   Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime  @default(now())
+
+  @@unique([workflowId, version])
+  @@index([workflowId, createdAt])
+}
+
+model Execution {
+  id          String           @id @db.Uuid
+  workflowId  String?          @db.Uuid
+
+  status      String           @default("RUNNING")
+
+  nodes       Json
+  edges       Json
+  input       Json
+  context     Json?
+
+  message     String?
+  durationMs  Int?
+
+  workflow    Workflow?        @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+
+  events      ExecutionEvent[]
+
+  startedAt   DateTime         @default(now())
+  completedAt DateTime?
+
+  @@index([workflowId, startedAt])
+}
+
+model ExecutionEvent {
+  id          String      @id @default(uuid()) @db.Uuid
+  executionId String      @db.Uuid
+
+  nodeId      String
+  status      String
+  message     String
+  timestamp   DateTime
+
+  execution   Execution   @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId, timestamp])
+}

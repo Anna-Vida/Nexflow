@@ -31,3 +31,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Local PostgreSQL data when Docker is unavailable
+.local-postgres/

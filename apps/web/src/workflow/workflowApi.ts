@@ -34,8 +34,40 @@ export type RemoteExecutionResult = {
   durationMs: number
 }
 
+export type SaveWorkflowResult = {
+  workflowId: string
+  version: number
+  updatedAt: string
+}
+
+export async function saveWorkflowRemote(
+  workflowId: string | undefined,
+  name: string,
+  nodes: WorkflowNode[],
+  edges: Edge[],
+): Promise<SaveWorkflowResult> {
+  let response: Response
+  try {
+    response = await fetch('/api/workflows/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workflowId, name, nodes, edges }),
+    })
+  } catch {
+    throw new Error('NexFlow API is unavailable.')
+  }
+
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(typeof data?.message === 'string' ? data.message : 'Could not save workflow.')
+  }
+
+  return data as SaveWorkflowResult
+}
+
 export async function executeWorkflowRemote(
   executionId: string,
+  workflowId: string | undefined,
   nodes: WorkflowNode[],
   edges: Edge[],
   input: Record<string, unknown>,
@@ -54,6 +86,7 @@ export async function executeWorkflowRemote(
 
         body: JSON.stringify({
           executionId,
+          workflowId,
           nodes,
           edges,
           input,

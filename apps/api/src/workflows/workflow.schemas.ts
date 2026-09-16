@@ -69,7 +69,7 @@ const delayDataSchema = z
   })
   .passthrough();
 
-const workflowNodeSchema = z
+export const workflowNodeSchema = z
   .object({
     id: z.string().min(1),
     type: z.string().optional(),
@@ -90,7 +90,7 @@ const workflowNodeSchema = z
   })
   .passthrough();
 
-const workflowEdgeSchema = z
+export const workflowEdgeSchema = z
   .object({
     id: z.string().min(1),
     source: z.string().min(1),
@@ -102,6 +102,7 @@ const workflowEdgeSchema = z
 
 export const executeWorkflowSchema = z.object({
   executionId: z.string().uuid(),
+  workflowId: z.string().uuid().optional(),
   nodes: z.array(workflowNodeSchema),
   edges: z.array(workflowEdgeSchema),
 
@@ -112,3 +113,12 @@ export const executeWorkflowSchema = z.object({
 
 export type ExecuteWorkflowDto =
   z.infer<typeof executeWorkflowSchema>;
+
+export const saveWorkflowSchema = z.object({
+  workflowId: z.string().uuid().optional(),
+  name: z.string().trim().min(1).max(120),
+  nodes: z.array(workflowNodeSchema),
+  edges: z.array(workflowEdgeSchema),
+});
+
+export type SaveWorkflowDto = z.infer<typeof saveWorkflowSchema>;
