@@ -19,7 +19,7 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import NodeConfigPanel from '../components/NodeConfigPanel'
-import { executeWorkflow } from '../workflow/workflowEngine'
+import { executeWorkflowRemote } from '../workflow/workflowApi'
 import type {
   NodeKind,
   NodeRuntimeState,
@@ -488,17 +488,19 @@ function WorkspacePage() {
     setRunMessage('Workflow is executing...')
 
     try {
-      const result = await executeWorkflow({
-        nodes,
-        edges,
-        input: testInput,
-        onUpdate: ({ nodeId, runtime }) => {
-          setRuntimeStates((current) => ({ ...current, [nodeId]: runtime }))
-        },
-      })
+      const result = await executeWorkflowRemote(nodes, edges, testInput)
+      for (const event of result.events) {
+        setRuntimeStates((current) => ({
+          ...current,
+          [event.nodeId]: { status: event.status, message: event.message },
+        }))
+        // Replay the server's completed events until execution streams live.
+        await new Promise((resolve) => window.setTimeout(resolve, 120))
+      }
       setRunState(result.success ? 'success' : 'failed')
-      setRunMessage(result.message)
+      setRunMessage(`${result.message} (${result.durationMs}ms)`)
     } catch (error) {
+      setRuntimeStates({})
       setRunState('failed')
       setRunMessage(error instanceof Error ? error.message : 'Workflow execution failed.')
     } finally {
