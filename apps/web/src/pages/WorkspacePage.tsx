@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import {
   addEdge,
@@ -19,6 +19,7 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import NodeConfigPanel from '../components/NodeConfigPanel'
+import { executionSocket } from '../workflow/executionSocket'
 import { executeWorkflowRemote } from '../workflow/workflowApi'
 import type {
   NodeKind,
@@ -285,6 +286,13 @@ function validateNode(data: WorkflowNodeData) {
 }
 
 function WorkspacePage() {
+  useEffect(() => {
+    executionSocket.connect()
+    return () => {
+      executionSocket.disconnect()
+    }
+  }, [])
+
   const savedWorkflow = useMemo(() => loadSavedWorkflow(), [])
 
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>(
@@ -487,16 +495,62 @@ function WorkspacePage() {
     setRunState('running')
     setRunMessage('Workflow is executing...')
 
+    const executionId = crypto.randomUUID()
+    const handleExecutionEvent = (event: {
+      executionId: string
+      nodeId: string
+      status: 'running' | 'success' | 'failed' | 'skipped'
+      message: string
+    }) => {
+      if (event.executionId !== executionId) return
+      setRuntimeStates((current) => ({
+        ...current,
+        [event.nodeId]: { status: event.status, message: event.message },
+      }))
+    }
+
+    executionSocket.on('execution:event', handleExecutionEvent)
+
     try {
-      const result = await executeWorkflowRemote(nodes, edges, testInput)
-      for (const event of result.events) {
-        setRuntimeStates((current) => ({
-          ...current,
-          [event.nodeId]: { status: event.status, message: event.message },
-        }))
-        // Replay the server's completed events until execution streams live.
-        await new Promise((resolve) => window.setTimeout(resolve, 120))
+      if (!executionSocket.connected) {
+        executionSocket.connect()
+        await new Promise<void>((resolve, reject) => {
+          const timer = window.setTimeout(() => {
+            cleanup()
+            reject(new Error('Could not connect to NexFlow execution stream.'))
+          }, 3000)
+          const cleanup = () => {
+            window.clearTimeout(timer)
+            executionSocket.off('connect', connected)
+            executionSocket.off('connect_error', failed)
+          }
+          const connected = () => { cleanup(); resolve() }
+          const failed = () => { cleanup(); reject(new Error('Could not connect to NexFlow execution stream.')) }
+          executionSocket.once('connect', connected)
+          executionSocket.once('connect_error', failed)
+        })
       }
+
+      await new Promise<void>((resolve, reject) => {
+        executionSocket.timeout(3000).emit(
+          'execution:subscribe',
+          { executionId },
+          (error: Error | null, response: { ok: boolean }) => {
+            if (error || !response?.ok) {
+              reject(new Error('Could not subscribe to execution stream.'))
+              return
+            }
+            resolve()
+          },
+        )
+      })
+
+      const result = await executeWorkflowRemote(executionId, nodes, edges, testInput)
+      // Reconcile the final state if a socket event was missed during execution.
+      setRuntimeStates(Object.fromEntries(result.events.map((event) => [
+        event.nodeId,
+        { status: event.status, message: event.message },
+      ])))
       setRunState(result.success ? 'success' : 'failed')
       setRunMessage(`${result.message} (${result.durationMs}ms)`)
     } catch (error) {
@@ -504,6 +558,7 @@ function WorkspacePage() {
       setRunState('failed')
       setRunMessage(error instanceof Error ? error.message : 'Workflow execution failed.')
     } finally {
+      executionSocket.off('execution:event', handleExecutionEvent)
       setIsRunning(false)
     }
   }

@@ -35,6 +35,7 @@ export type RemoteExecutionResult = {
 }
 
 export async function executeWorkflowRemote(
+  executionId: string,
   nodes: WorkflowNode[],
   edges: Edge[],
   input: Record<string, unknown>,
@@ -52,6 +53,7 @@ export async function executeWorkflowRemote(
         },
 
         body: JSON.stringify({
+          executionId,
           nodes,
           edges,
           input,

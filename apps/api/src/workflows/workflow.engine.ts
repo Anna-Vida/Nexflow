@@ -18,6 +18,8 @@ export type ExecutionEvent = {
   timestamp: string;
 };
 
+export type ExecutionEventHandler = (event: ExecutionEvent) => void;
+
 export type WorkflowExecutionResult = {
   success: boolean;
   message: string;
@@ -303,6 +305,7 @@ async function executeNode(
 
 export async function executeWorkflow(
   request: ExecuteWorkflowDto,
+  onEvent?: ExecutionEventHandler,
 ): Promise<WorkflowExecutionResult> {
   const startedAt = Date.now();
 
@@ -320,12 +323,15 @@ export async function executeWorkflow(
     status: ExecutionStatus,
     message: string,
   ) => {
-    events.push({
+    const event: ExecutionEvent = {
       nodeId,
       status,
       message,
       timestamp: new Date().toISOString(),
-    });
+    };
+
+    events.push(event);
+    onEvent?.(event);
   };
 
   try {

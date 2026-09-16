@@ -101,6 +101,7 @@ const workflowEdgeSchema = z
   .passthrough();
 
 export const executeWorkflowSchema = z.object({
+  executionId: z.string().uuid(),
   nodes: z.array(workflowNodeSchema),
   edges: z.array(workflowEdgeSchema),
 

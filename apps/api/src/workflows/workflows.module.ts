@@ -1,6 +1,15 @@
-import { Module } from '@nestjs/common';
-import { WorkflowsController } from './workflows.controller.js';
-import { WorkflowsService } from './workflows.service.js';
+import {
+  Module,
+} from '@nestjs/common';
+import {
+  ExecutionsGateway,
+} from './executions.gateway.js';
+import {
+  WorkflowsController,
+} from './workflows.controller.js';
+import {
+  WorkflowsService,
+} from './workflows.service.js';
 
 @Module({
   controllers: [
@@ -9,6 +18,7 @@ import { WorkflowsService } from './workflows.service.js';
 
   providers: [
     WorkflowsService,
+    ExecutionsGateway,
   ],
 })
 export class WorkflowsModule {}
