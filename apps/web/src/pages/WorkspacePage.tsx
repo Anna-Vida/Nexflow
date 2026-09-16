@@ -19,8 +19,10 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import NodeConfigPanel from '../components/NodeConfigPanel'
+import { executeWorkflow } from '../workflow/workflowEngine'
 import type {
   NodeKind,
+  NodeRuntimeState,
   WorkflowDocument,
   WorkflowNode,
   WorkflowNodeData,
@@ -32,7 +34,14 @@ function WorkflowNodeCard({
   selected,
 }: NodeProps<WorkflowNode>) {
   return (
-    <div className={`builder-node ${selected ? 'selected' : ''}`}>
+    <div
+      className={[
+        'builder-node',
+        selected ? 'selected' : '',
+        data.runtime ? `status-${data.runtime.status}` : '',
+      ].filter(Boolean).join(' ')}
+      title={data.runtime?.message}
+    >
       {data.hasInput !== false && (
         <Handle
           type="target"
@@ -49,12 +58,25 @@ function WorkflowNodeCard({
         <small>{data.subtitle}</small>
       </div>
 
-      {data.hasOutput !== false && (
+      {data.hasOutput !== false && (data.kind === 'condition' ? (
+        <>
+          <Handle id="true" type="source" position={Position.Right} className="builder-handle condition-handle condition-true" />
+          <Handle id="false" type="source" position={Position.Right} className="builder-handle condition-handle condition-false" />
+          <span className="branch-label branch-true">T</span>
+          <span className="branch-label branch-false">F</span>
+        </>
+      ) : (
         <Handle
           type="source"
           position={Position.Right}
           className="builder-handle"
         />
+      ))}
+
+      {data.runtime && data.runtime.status !== 'idle' && (
+        <span className={`runtime-indicator ${data.runtime.status}`}>
+          {data.runtime.status === 'running' ? '●' : data.runtime.status === 'success' ? '✓' : data.runtime.status === 'failed' ? '!' : data.runtime.status === 'skipped' ? '–' : '○'}
+        </span>
       )}
     </div>
   )
@@ -134,6 +156,7 @@ const initialEdges: Edge[] = [
   {
     id: 'condition-http',
     source: 'condition-1',
+    sourceHandle: 'true',
     target: 'http-1',
     animated: true,
     markerEnd: {
@@ -276,6 +299,26 @@ function WorkspacePage() {
   const [saveStatus, setSaveStatus] = useState(
     savedWorkflow ? 'Saved locally' : 'Unsaved',
   )
+  const [runtimeStates, setRuntimeStates] = useState<Record<string, NodeRuntimeState>>({})
+  const [isRunning, setIsRunning] = useState(false)
+  const [runState, setRunState] = useState<'ready' | 'running' | 'success' | 'failed'>('ready')
+  const [runMessage, setRunMessage] = useState('Ready to execute')
+
+  const renderedNodes = useMemo(
+    () => nodes.map((node) => ({
+      ...node,
+      data: { ...node.data, runtime: runtimeStates[node.id] },
+    })),
+    [nodes, runtimeStates],
+  )
+
+  const testInput = useMemo(() => ({
+    amount: 12500,
+    total: 5000,
+    message: 'Hello from NexFlow',
+    status: 'pending',
+    approved: true,
+  }), [])
 
   const selectedNode =
     nodes.find((node) => node.id === selectedNodeId) ?? null
@@ -420,6 +463,49 @@ function WorkspacePage() {
     markUnsaved()
   }
 
+  const runWorkflow = async () => {
+    if (isRunning) return
+
+    const invalidNodes = nodes
+      .map((node) => ({ node, error: validateNode(node.data) }))
+      .filter((result) => result.error !== null)
+
+    if (invalidNodes.length > 0) {
+      setSelectedNodeId(invalidNodes[0].node.id)
+      setRunState('failed')
+      setRunMessage(`${invalidNodes.length} node${invalidNodes.length === 1 ? ' needs' : 's need'} attention before running.`)
+      return
+    }
+
+    const initialRuntime = Object.fromEntries(nodes.map((node) => [
+      node.id,
+      { status: 'queued', message: 'Waiting to execute.' } satisfies NodeRuntimeState,
+    ]))
+
+    setRuntimeStates(initialRuntime)
+    setIsRunning(true)
+    setRunState('running')
+    setRunMessage('Workflow is executing...')
+
+    try {
+      const result = await executeWorkflow({
+        nodes,
+        edges,
+        input: testInput,
+        onUpdate: ({ nodeId, runtime }) => {
+          setRuntimeStates((current) => ({ ...current, [nodeId]: runtime }))
+        },
+      })
+      setRunState(result.success ? 'success' : 'failed')
+      setRunMessage(result.message)
+    } catch (error) {
+      setRunState('failed')
+      setRunMessage(error instanceof Error ? error.message : 'Workflow execution failed.')
+    } finally {
+      setIsRunning(false)
+    }
+  }
+
   return (
     <div className="workspace">
       <header className="workspace-header">
@@ -463,11 +549,11 @@ function WorkspacePage() {
 
           <button
             className="run-button"
-            disabled
-            title="The workflow execution engine is the next milestone"
+            onClick={runWorkflow}
+            disabled={isRunning}
           >
-            <span>▶</span>
-            Run workflow
+            <span>{isRunning ? '●' : '▶'}</span>
+            {isRunning ? 'Running...' : 'Run workflow'}
           </button>
         </div>
       </header>
@@ -539,7 +625,7 @@ function WorkspacePage() {
 
         <main className="flow-area">
           <ReactFlow
-            nodes={nodes}
+            nodes={renderedNodes}
             edges={edges}
             nodeTypes={nodeTypes}
             onNodesChange={handleNodesChange}
@@ -577,6 +663,14 @@ function WorkspacePage() {
               maskColor="rgba(8, 9, 12, 0.78)"
             />
           </ReactFlow>
+
+          <div className={`execution-banner ${runState}`} title={`Test input: ${JSON.stringify(testInput)}`}>
+            <span className="execution-banner-dot" />
+            <div>
+              <strong>{runState === 'ready' ? 'Execution' : runState === 'running' ? 'Running workflow' : runState === 'success' ? 'Execution complete' : 'Execution failed'}</strong>
+              <small>{runMessage}</small>
+            </div>
+          </div>
 
           <div className="canvas-help">
             <span>Scroll</span> zoom

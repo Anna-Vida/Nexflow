@@ -673,3 +673,185 @@
     display: none;
   }
 }
+
+.builder-node {
+  position: relative;
+}
+
+.builder-node.status-running {
+  border-color: #8069ed;
+  box-shadow:
+    0 0 0 1px rgba(128, 105, 237, 0.2),
+    0 0 28px rgba(128, 105, 237, 0.12);
+}
+
+.builder-node.status-success {
+  border-color: #3d8f68;
+}
+
+.builder-node.status-failed {
+  border-color: #b7525b;
+  box-shadow:
+    0 0 0 1px rgba(183, 82, 91, 0.15),
+    0 0 25px rgba(183, 82, 91, 0.1);
+}
+
+.builder-node.status-skipped {
+  opacity: 0.45;
+}
+
+.runtime-indicator {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.runtime-indicator.queued {
+  color: #777881;
+  border: 1px solid #3c3d44;
+}
+
+.runtime-indicator.running {
+  color: #a894ff;
+  border: 1px solid #6652bd;
+  animation: executionPulse 850ms ease-in-out infinite;
+}
+
+.runtime-indicator.success {
+  color: #69d6a1;
+  border: 1px solid #336d50;
+  background: #13231c;
+}
+
+.runtime-indicator.failed {
+  color: #ef818b;
+  border: 1px solid #763b41;
+  background: #291619;
+}
+
+.runtime-indicator.skipped {
+  color: #777881;
+  border: 1px solid #3b3c43;
+}
+
+.condition-handle.condition-true {
+  top: 35% !important;
+}
+
+.condition-handle.condition-false {
+  top: 70% !important;
+}
+
+.branch-label {
+  position: absolute;
+  right: 10px;
+  color: #65666e;
+  font-size: 7px;
+  pointer-events: none;
+}
+
+.branch-true {
+  top: 24%;
+  color: #64b98b;
+}
+
+.branch-false {
+  top: 59%;
+  color: #bb6d73;
+}
+
+.execution-banner {
+  position: absolute;
+  z-index: 6;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 260px;
+  max-width: 420px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #292a31;
+  border-radius: 10px;
+  background: rgba(15, 16, 20, 0.93);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+.execution-banner-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #60616a;
+}
+
+.execution-banner > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.execution-banner strong {
+  color: #b9bac0;
+  font-size: 9px;
+}
+
+.execution-banner small {
+  overflow: hidden;
+  color: #64656d;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.execution-banner.running {
+  border-color: #423769;
+}
+
+.execution-banner.running .execution-banner-dot {
+  background: #8269f4;
+  box-shadow: 0 0 10px #8269f4;
+  animation: executionPulse 850ms ease-in-out infinite;
+}
+
+.execution-banner.success {
+  border-color: #294c3b;
+}
+
+.execution-banner.success .execution-banner-dot {
+  background: #54c48d;
+}
+
+.execution-banner.failed {
+  border-color: #563038;
+}
+
+.execution-banner.failed .execution-banner-dot {
+  background: #d1616b;
+}
+
+.run-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+@keyframes executionPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}

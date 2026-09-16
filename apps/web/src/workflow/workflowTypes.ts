@@ -28,6 +28,19 @@ export type DelayConfig = {
   unit: 'seconds' | 'minutes'
 }
 
+export type NodeExecutionStatus =
+  | 'idle'
+  | 'queued'
+  | 'running'
+  | 'success'
+  | 'failed'
+  | 'skipped'
+
+export type NodeRuntimeState = {
+  status: NodeExecutionStatus
+  message?: string
+}
+
 type CommonNodeData = {
   title: string
   subtitle: string
@@ -35,6 +48,7 @@ type CommonNodeData = {
   icon: string
   hasInput?: boolean
   hasOutput?: boolean
+  runtime?: NodeRuntimeState
 } & Record<string, unknown>
 
 export type WorkflowNodeData =
