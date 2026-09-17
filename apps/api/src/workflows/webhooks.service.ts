@@ -1,3 +1,6 @@
+import { ServiceUnavailableException } from '@nestjs/common';
+import { WorkflowQueueService } from '../queue/workflow-queue.service.js';
+
 import {
   BadRequestException,
   ConflictException,
@@ -121,6 +124,8 @@ export class WebhooksService {
 
     private readonly workflows:
       WorkflowsService,
+
+    private readonly queue: WorkflowQueueService,
   ) {}
 
   async trigger(
@@ -286,16 +291,16 @@ export class WebhooksService {
       );
     }
 
-    const result =
-      await this.workflows
-        .execute(
-          executionRequest.data,
-
-          {
-            startNodeId:
-              trigger.id,
-          },
-        );
+    await this.workflows.createQueuedExecution(executionRequest.data);
+    try {
+      await this.queue.enqueue({ executionId, startNodeId: trigger.id });
+    } catch {
+      await this.workflows.failQueuedExecution(
+        executionId,
+        'Could not enqueue workflow execution.',
+      ).catch(() => undefined);
+      throw new ServiceUnavailableException('Workflow execution queue is unavailable.');
+    }
 
     return {
       executionId,
@@ -306,7 +311,7 @@ export class WebhooksService {
       workflowName:
         workflow.name,
 
-      ...result,
+      status: 'QUEUED',
     };
   }
 }

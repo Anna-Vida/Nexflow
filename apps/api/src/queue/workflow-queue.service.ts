@@ -1,0 +1,42 @@
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Queue } from 'bullmq';
+import { redisConnection, WORKFLOW_QUEUE, type WorkflowJobData } from './workflow-queue.js';
+
+@Injectable()
+export class WorkflowQueueService implements OnModuleDestroy {
+  private readonly logger = new Logger(WorkflowQueueService.name);
+  private readonly queue = new Queue<WorkflowJobData>(WORKFLOW_QUEUE, {
+    connection: redisConnection(false),
+    skipWaitingForReady: true,
+    defaultJobOptions: {
+      attempts: 1,
+      removeOnComplete: 100,
+      removeOnFail: 500,
+    },
+  });
+
+  constructor() {
+    this.queue.on('error', (error: Error) => this.logger.error(error.message));
+  }
+
+  async enqueue(data: WorkflowJobData) {
+    // This bounds the HTTP wait, not the Redis command itself. A late job can
+    // only run if its execution is still QUEUED when the worker claims it.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        this.queue.add('execute-workflow', data, { jobId: data.executionId }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Redis is unavailable.')), 3000);
+          timer.unref();
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  async onModuleDestroy() {
+    await this.queue.close();
+  }
+}

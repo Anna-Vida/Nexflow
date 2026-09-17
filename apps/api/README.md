@@ -31,6 +31,42 @@
 $ npm install
 ```
 
+## Background webhook execution
+
+Configure `DATABASE_URL` for PostgreSQL and `REDIS_URL` for Redis in the API's
+local `.env` file. Redis defaults to `redis://127.0.0.1:6379`; use the same URL
+for both API and worker. Configure Redis with `maxmemory-policy noeviction` and
+persistence appropriate for your durability requirements.
+
+For the Windows/WSL development setup, start Redis with:
+
+```powershell
+wsl -d Ubuntu -u root --exec service redis-server start
+wsl -d Ubuntu --exec redis-cli ping
+```
+
+From the API directory, build once, then run the API and worker in separate terminals:
+
+```bash
+npm run build
+npm run start:prod
+# Separate terminal:
+npm run start:worker
+```
+
+Webhooks return HTTP 202 after enqueueing; manual Run remains synchronous. Redis
+holds execution IDs and trigger IDs, while PostgreSQL holds workflow snapshots,
+inputs, results, and events. Jobs waiting while the worker is stopped are processed
+when it starts again. This milestone uses one attempt, without automatic retries
+or stalled-job reprocessing. A hard-killed worker can leave a PostgreSQL execution
+in RUNNING; crash reconciliation and retry controls are not implemented yet.
+Enqueue timeouts return 503 but cannot cancel a Redis command already in flight;
+a job already claimed by the worker may still finish.
+
+Run `npm run test:webhooks` with PostgreSQL and Redis available. It launches its
+own worker and uses Redis database 15 by default. Set `TEST_REDIS_URL` to override
+this with a dedicated test database; do not run another worker against it.
+
 ## Compile and run the project
 
 ```bash

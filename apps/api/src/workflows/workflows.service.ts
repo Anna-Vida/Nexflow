@@ -8,13 +8,15 @@ import type {
 import {
   PrismaService,
 } from '../database/prisma.service.js';
-import type {
-  ExecuteWorkflowDto,
-  SaveWorkflowDto,
+import {
+  executeWorkflowSchema,
+  type ExecuteWorkflowDto,
+  type SaveWorkflowDto,
 } from './workflow.schemas.js';
 import {
   executeWorkflow,
   type WorkflowExecutionOptions,
+  type WorkflowExecutionResult,
 } from './workflow.engine.js';
 import {
   ExecutionsGateway,
@@ -152,134 +154,104 @@ export class WorkflowsService {
     );
   }
 
-  async execute(
-    request: ExecuteWorkflowDto,
-    options?: WorkflowExecutionOptions,
-  ) {
-    if (request.workflowId) {
-      const workflow =
-        await this.prisma.workflow.findUnique({
-          where: {
-            id:
-              request.workflowId,
-          },
+  private async ensureWorkflowExists(workflowId?: string) {
+    if (!workflowId) return;
+    const workflow = await this.prisma.workflow.findUnique({
+      where: { id: workflowId }, select: { id: true },
+    });
+    if (!workflow) throw new NotFoundException('Workflow not found.');
+  }
 
-          select: {
-            id: true,
-          },
-        });
-
-      if (!workflow) {
-        throw new NotFoundException(
-          'Workflow not found.',
-        );
-      }
-    }
-
-    await this.prisma.execution.create({
+  private async createExecutionRecord(request: ExecuteWorkflowDto, status: 'QUEUED' | 'RUNNING') {
+    return this.prisma.execution.create({
       data: {
-        id:
-          request.executionId,
-
-        workflowId:
-          request.workflowId ??
-          null,
-
-        status:
-          'RUNNING',
-
-        nodes:
-          toJson(
-            request.nodes,
-          ),
-
-        edges:
-          toJson(
-            request.edges,
-          ),
-
-        input:
-          toJson(
-            request.input,
-          ),
+        id: request.executionId,
+        workflowId: request.workflowId ?? null,
+        status,
+        nodes: toJson(request.nodes),
+        edges: toJson(request.edges),
+        input: toJson(request.input),
       },
     });
+  }
 
-    const result =
-      await executeWorkflow(
-        request,
-
-        (event) => {
-          this.executionsGateway
-            .emitEvent(
-              request.executionId,
-              event,
-            );
-        },
-        options,
-      );
-
+  private async persistExecutionResult(executionId: string, result: WorkflowExecutionResult) {
     await this.prisma.$transaction([
       this.prisma.execution.update({
-        where: {
-          id:
-            request.executionId,
-        },
-
+        where: { id: executionId },
         data: {
-          status:
-            result.success
-              ? 'SUCCESS'
-              : 'FAILED',
-
-          context:
-            toJson(
-              result.context,
-            ),
-
-          message:
-            result.message,
-
-          durationMs:
-            result.durationMs,
-
-          completedAt:
-            new Date(),
+          status: result.success ? 'SUCCESS' : 'FAILED',
+          context: toJson(result.context),
+          message: result.message,
+          durationMs: result.durationMs,
+          completedAt: new Date(),
         },
       }),
-
       this.prisma.executionEvent.createMany({
-        data:
-          result.events.map(
-            (event) => ({
-              executionId:
-                request.executionId,
-
-              nodeId:
-                event.nodeId,
-
-              status:
-                event.status,
-
-              message:
-                event.message,
-
-              timestamp:
-                new Date(
-                  event.timestamp,
-                ),
-            }),
-          ),
+        data: result.events.map((event) => ({
+          executionId,
+          nodeId: event.nodeId,
+          status: event.status,
+          message: event.message,
+          timestamp: new Date(event.timestamp),
+        })),
       }),
     ]);
+  }
 
-    this.executionsGateway
-      .emitComplete(
-        request.executionId,
-        result,
-      );
-
+  async execute(request: ExecuteWorkflowDto, options?: WorkflowExecutionOptions) {
+    await this.ensureWorkflowExists(request.workflowId);
+    await this.createExecutionRecord(request, 'RUNNING');
+    const result = await executeWorkflow(request, (event) => {
+      this.executionsGateway.emitEvent(request.executionId, event);
+    }, options);
+    await this.persistExecutionResult(request.executionId, result);
+    this.executionsGateway.emitComplete(request.executionId, result);
     return result;
+  }
+
+  async createQueuedExecution(request: ExecuteWorkflowDto) {
+    await this.ensureWorkflowExists(request.workflowId);
+    return this.createExecutionRecord(request, 'QUEUED');
+  }
+
+  async failQueuedExecution(executionId: string, message: string, status: 'QUEUED' | 'RUNNING' = 'QUEUED') {
+    await this.prisma.execution.updateMany({
+      where: { id: executionId, status },
+      data: { status: 'FAILED', message, completedAt: new Date() },
+    });
+  }
+
+  async processQueuedExecution(executionId: string, options?: WorkflowExecutionOptions) {
+    const execution = await this.prisma.execution.findUnique({ where: { id: executionId } });
+    if (!execution) throw new Error(`Execution ${executionId} does not exist.`);
+    if (execution.status !== 'QUEUED') throw new Error(`Execution ${executionId} is not queued.`);
+    const parsed = executeWorkflowSchema.safeParse({
+      executionId: execution.id,
+      workflowId: execution.workflowId ?? undefined,
+      nodes: execution.nodes,
+      edges: execution.edges,
+      input: execution.input,
+    });
+    if (!parsed.success) {
+      await this.failQueuedExecution(executionId, 'Stored execution payload is invalid.');
+      throw new Error('Stored execution payload is invalid.');
+    }
+    // Claim atomically so duplicate deliveries cannot execute a snapshot twice.
+    const claimed = await this.prisma.execution.updateMany({
+      where: { id: executionId, status: 'QUEUED' },
+      data: { status: 'RUNNING' },
+    });
+    if (claimed.count !== 1) throw new Error(`Execution ${executionId} is not queued.`);
+    try {
+      const result = await executeWorkflow(parsed.data, undefined, options);
+      await this.persistExecutionResult(executionId, result);
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Worker execution failed.';
+      await this.failQueuedExecution(executionId, message, 'RUNNING').catch(() => undefined);
+      throw error;
+    }
   }
 
   async history(

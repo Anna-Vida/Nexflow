@@ -1,3 +1,5 @@
+import { HttpCode, HttpStatus } from '@nestjs/common';
+
 import {
   All,
   Body,
@@ -35,6 +37,7 @@ export class WebhooksController {
   ) {}
 
   @All(':token/*splat')
+  @HttpCode(HttpStatus.ACCEPTED)
   trigger(
     @Param('token')
     token: string,

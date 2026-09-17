@@ -13,7 +13,11 @@ import {
 import { WebhooksController } from './webhooks.controller.js';
 import { WebhooksService } from './webhooks.service.js';
 
+import { QueueModule } from '../queue/queue.module.js';
+
 @Module({
+  imports: [QueueModule],
+  exports: [WorkflowsService],
   controllers: [
     WorkflowsController,
     WebhooksController,
