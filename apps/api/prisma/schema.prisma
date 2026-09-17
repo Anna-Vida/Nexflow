@@ -47,6 +47,15 @@ model Execution {
   input       Json
   context     Json?
 
+  startNodeId  String?
+  attemptCount Int @default(0)
+  maxAttempts  Int @default(1)
+  lastError    String?
+
+  retriedFromId String? @db.Uuid
+  retriedFrom Execution? @relation("ExecutionRetries", fields: [retriedFromId], references: [id], onDelete: SetNull)
+  retries Execution[] @relation("ExecutionRetries")
+
   message     String?
   durationMs  Int?
 
@@ -63,6 +72,7 @@ model Execution {
 model ExecutionEvent {
   id          String      @id @default(uuid()) @db.Uuid
   executionId String      @db.Uuid
+  attempt     Int         @default(1)
 
   nodeId      String
   status      String

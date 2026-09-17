@@ -291,9 +291,9 @@ export class WebhooksService {
       );
     }
 
-    await this.workflows.createQueuedExecution(executionRequest.data);
+    await this.workflows.createQueuedExecution(executionRequest.data, trigger.id);
     try {
-      await this.queue.enqueue({ executionId, startNodeId: trigger.id });
+      await this.queue.enqueue({ executionId });
     } catch {
       await this.workflows.failQueuedExecution(
         executionId,

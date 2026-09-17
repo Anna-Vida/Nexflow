@@ -1,8 +1,9 @@
 export const WORKFLOW_QUEUE = 'nexflow-workflow-executions';
 
+export const WORKFLOW_MAX_ATTEMPTS = 3;
+
 export type WorkflowJobData = {
   executionId: string;
-  startNodeId?: string;
 };
 
 export function redisConnection(worker = false) {

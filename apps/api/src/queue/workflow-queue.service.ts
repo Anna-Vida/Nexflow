@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { redisConnection, WORKFLOW_QUEUE, type WorkflowJobData } from './workflow-queue.js';
+import { redisConnection, WORKFLOW_QUEUE, WORKFLOW_MAX_ATTEMPTS, type WorkflowJobData } from './workflow-queue.js';
 
 @Injectable()
 export class WorkflowQueueService implements OnModuleDestroy {
@@ -9,7 +9,8 @@ export class WorkflowQueueService implements OnModuleDestroy {
     connection: redisConnection(false),
     skipWaitingForReady: true,
     defaultJobOptions: {
-      attempts: 1,
+      attempts: WORKFLOW_MAX_ATTEMPTS,
+      backoff: { type: 'exponential', delay: 1000 },
       removeOnComplete: 100,
       removeOnFail: 500,
     },

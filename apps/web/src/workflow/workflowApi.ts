@@ -187,6 +187,8 @@ export function getWorkflowRemote(workflowId: string) {
 
 export type ExecutionDetailEvent = {
   id: string
+  attempt: number
+
   executionId: string
   nodeId: string
   status: string
@@ -199,6 +201,10 @@ export type ExecutionDetail = {
   id: string
   workflowId: string | null
   status: string
+  attemptCount: number
+  maxAttempts: number
+  lastError: string | null
+  retriedFromId: string | null
   nodes: unknown
   edges: unknown
   input: Record<string, unknown>
@@ -209,6 +215,18 @@ export type ExecutionDetail = {
   completedAt: string | null
   workflow: { id: string; name: string } | null
   events: ExecutionDetailEvent[]
+}
+
+export async function retryExecutionRemote(executionId: string): Promise<{ executionId: string; retriedFromId: string; status: 'QUEUED' }> {
+  let response: Response
+  try {
+    response = await fetch(`/api/workflows/executions/${executionId}/retry`, { method: 'POST' })
+  } catch {
+    throw new Error('NexFlow API is unavailable.')
+  }
+  const data = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(typeof data?.message === 'string' ? data.message : 'Could not retry execution.')
+  return data
 }
 
 export function getExecutionRemote(executionId: string) {

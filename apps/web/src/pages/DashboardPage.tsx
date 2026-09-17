@@ -8,6 +8,7 @@ import {
 } from 'react-router'
 import {
   getExecutionRemote,
+  retryExecutionRemote,
   getRecentExecutionsRemote,
   listWorkflowsRemote,
   type ExecutionDetail,
@@ -84,7 +85,37 @@ function DashboardPage() {
 
   const [selectedExecution, setSelectedExecution] = useState<ExecutionDetail | null>(null)
   const [executionLoading, setExecutionLoading] = useState(false)
+  const [retryPending, setRetryPending] = useState(false)
   const [executionError, setExecutionError] = useState<string | null>(null)
+
+  const retryExecution = async () => {
+    if (!selectedExecution || retryPending) return
+    setRetryPending(true)
+    setExecutionError(null)
+    try {
+      const result = await retryExecutionRemote(selectedExecution.id)
+      await openExecution(result.executionId)
+    } catch (retryError) {
+      setExecutionError(retryError instanceof Error ? retryError.message : 'Could not retry execution.')
+    } finally {
+      setRetryPending(false)
+    }
+  }
+
+  const selectedId = selectedExecution?.id
+  const selectedStatus = selectedExecution?.status
+  useEffect(() => {
+    if (!selectedId || !['QUEUED', 'RUNNING', 'RETRYING'].includes(selectedStatus ?? '')) return
+    let active = true
+    const timer = setInterval(() => {
+      void getExecutionRemote(selectedId).then((detail) => {
+        if (active) setSelectedExecution(detail)
+      }).catch((loadError: unknown) => {
+        if (active) setExecutionError(loadError instanceof Error ? loadError.message : 'Could not refresh execution.')
+      })
+    }, 500)
+    return () => { active = false; clearInterval(timer) }
+  }, [selectedId, selectedStatus])
 
   const openExecution = async (executionId: string) => {
     setExecutionLoading(true)
@@ -145,9 +176,11 @@ function DashboardPage() {
     }
 
     void load()
+    const timer = setInterval(() => { void load() }, 2000)
 
     return () => {
       active = false
+      clearInterval(timer)
     }
   }, [])
 
@@ -544,6 +577,18 @@ function DashboardPage() {
 
                   <div>
                     <span>
+                      Attempt
+                    </span>
+
+                    <strong>
+                      {
+                        `${selectedExecution.attemptCount} / ${selectedExecution.maxAttempts}`
+                      }
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
                       Started
                     </span>
 
@@ -554,6 +599,47 @@ function DashboardPage() {
                     </strong>
                   </div>
                 </div>
+
+                {selectedExecution.lastError && (
+                  <section className="execution-detail-section">
+                    <h3>
+                      Last error
+                    </h3>
+
+                    <p>
+                      {
+                        selectedExecution.lastError
+                      }
+                    </p>
+                  </section>
+                )}
+
+                {selectedExecution.retriedFromId && (
+                  <section className="execution-detail-section">
+                    <h3>
+                      Retried from
+                    </h3>
+
+                    <button
+                      className="retry-lineage"
+                      type="button"
+                      onClick={() => void openExecution(selectedExecution.retriedFromId as string)}
+                    >
+                      {selectedExecution.retriedFromId}
+                    </button>
+                  </section>
+                )}
+
+                {selectedExecution.status === 'FAILED' && (
+                  <button
+                    className="retry-button"
+                    type="button"
+                    disabled={retryPending}
+                    onClick={() => void retryExecution()}
+                  >
+                    {retryPending ? 'Retrying…' : 'Retry execution'}
+                  </button>
+                )}
 
                 {selectedExecution.message && (
                   <section className="execution-detail-section">
@@ -575,46 +661,56 @@ function DashboardPage() {
                   </h3>
 
                   <div className="event-timeline">
-                    {selectedExecution.events.map(
-                      (event) => (
-                        <div
-                          className="event-item"
-                          key={event.id}
-                        >
-                          <span
-                            className={`event-dot ${event.status.toLowerCase()}`}
-                          />
+                    {[...new Set(selectedExecution.events.map((event) => event.attempt))].sort((a, b) => a - b).map((attempt) => (
+                      <div className="attempt-group" key={`attempt-${attempt}`}>
+                        <h4>
+                          {`Attempt ${attempt}`}
+                        </h4>
 
-                          <div>
-                            <div className="event-item-top">
-                              <strong>
-                                {
-                                  event.nodeId
-                                }
-                              </strong>
+                        {selectedExecution.events
+                          .filter((event) => event.attempt === attempt)
+                          .map(
+                            (event) => (
+                              <div
+                                className="event-item"
+                                key={event.id}
+                              >
+                                <span
+                                  className={`event-dot ${event.status.toLowerCase()}`}
+                                />
 
-                              <span>
-                                {
-                                  event.status
-                                }
-                              </span>
-                            </div>
+                                <div>
+                                  <div className="event-item-top">
+                                    <strong>
+                                      {
+                                        event.nodeId
+                                      }
+                                    </strong>
 
-                            <p>
-                              {
-                                event.message
-                              }
-                            </p>
+                                    <span>
+                                      {
+                                        event.status
+                                      }
+                                    </span>
+                                  </div>
 
-                            <small>
-                              {formatDate(
-                                event.timestamp,
-                              )}
-                            </small>
-                          </div>
-                        </div>
-                      ),
-                    )}
+                                  <p>
+                                    {
+                                      event.message
+                                    }
+                                  </p>
+
+                                  <small>
+                                    {formatDate(
+                                      event.timestamp,
+                                    )}
+                                  </small>
+                                </div>
+                              </div>
+                            ),
+                          )}
+                      </div>
+                    ))}
                   </div>
                 </section>
 

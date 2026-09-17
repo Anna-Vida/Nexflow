@@ -1,3 +1,5 @@
+import { HttpCode, HttpStatus } from '@nestjs/common';
+
 import {
   BadRequestException,
   Body,
@@ -43,6 +45,12 @@ export class WorkflowsController {
   @Get('executions/:executionId')
   executionDetails(@Param('executionId') executionId: string) {
     return this.workflowsService.executionDetails(parseUuid(executionId));
+  }
+
+  @Post('executions/:executionId/retry')
+  @HttpCode(HttpStatus.ACCEPTED)
+  retry(@Param('executionId') executionId: string) {
+    return this.workflowsService.retryExecution(parseUuid(executionId));
   }
 
   @Get(':workflowId')

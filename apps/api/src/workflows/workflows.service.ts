@@ -1,3 +1,8 @@
+import { randomUUID } from 'node:crypto';
+import { ConflictException, ServiceUnavailableException } from '@nestjs/common';
+import { WorkflowQueueService } from '../queue/workflow-queue.service.js';
+import { WORKFLOW_MAX_ATTEMPTS } from '../queue/workflow-queue.js';
+
 import {
   Injectable,
   NotFoundException,
@@ -33,6 +38,7 @@ function toJson(
 @Injectable()
 export class WorkflowsService {
   constructor(
+    private readonly queue: WorkflowQueueService,
     private readonly executionsGateway:
       ExecutionsGateway,
 
@@ -162,12 +168,15 @@ export class WorkflowsService {
     if (!workflow) throw new NotFoundException('Workflow not found.');
   }
 
-  private async createExecutionRecord(request: ExecuteWorkflowDto, status: 'QUEUED' | 'RUNNING') {
+  private async createExecutionRecord(request: ExecuteWorkflowDto, status: 'QUEUED' | 'RUNNING', startNodeId?: string) {
     return this.prisma.execution.create({
       data: {
         id: request.executionId,
         workflowId: request.workflowId ?? null,
         status,
+        startNodeId,
+        attemptCount: status === 'RUNNING' ? 1 : 0,
+        maxAttempts: status === 'RUNNING' ? 1 : WORKFLOW_MAX_ATTEMPTS,
         nodes: toJson(request.nodes),
         edges: toJson(request.edges),
         input: toJson(request.input),
@@ -175,21 +184,23 @@ export class WorkflowsService {
     });
   }
 
-  private async persistExecutionResult(executionId: string, result: WorkflowExecutionResult) {
+  private async persistExecutionResult(executionId: string, result: WorkflowExecutionResult, attempt = 1, maxAttempts = 1) {
     await this.prisma.$transaction([
       this.prisma.execution.update({
         where: { id: executionId },
         data: {
-          status: result.success ? 'SUCCESS' : 'FAILED',
+          status: result.success ? 'SUCCESS' : attempt < maxAttempts ? 'RETRYING' : 'FAILED',
+          lastError: result.success ? null : result.message,
           context: toJson(result.context),
           message: result.message,
           durationMs: result.durationMs,
-          completedAt: new Date(),
+          completedAt: result.success || attempt >= maxAttempts ? new Date() : null,
         },
       }),
       this.prisma.executionEvent.createMany({
         data: result.events.map((event) => ({
           executionId,
+          attempt,
           nodeId: event.nodeId,
           status: event.status,
           message: event.message,
@@ -210,48 +221,75 @@ export class WorkflowsService {
     return result;
   }
 
-  async createQueuedExecution(request: ExecuteWorkflowDto) {
+  async createQueuedExecution(request: ExecuteWorkflowDto, startNodeId?: string) {
     await this.ensureWorkflowExists(request.workflowId);
-    return this.createExecutionRecord(request, 'QUEUED');
+    return this.createExecutionRecord(request, 'QUEUED', startNodeId);
   }
 
   async failQueuedExecution(executionId: string, message: string, status: 'QUEUED' | 'RUNNING' = 'QUEUED') {
     await this.prisma.execution.updateMany({
       where: { id: executionId, status },
-      data: { status: 'FAILED', message, completedAt: new Date() },
+      data: { status: 'FAILED', message, lastError: message, completedAt: new Date() },
     });
   }
 
-  async processQueuedExecution(executionId: string, options?: WorkflowExecutionOptions) {
+  async processQueuedExecution(executionId: string, { attempt, maxAttempts }: { attempt: number; maxAttempts: number }) {
     const execution = await this.prisma.execution.findUnique({ where: { id: executionId } });
     if (!execution) throw new Error(`Execution ${executionId} does not exist.`);
-    if (execution.status !== 'QUEUED') throw new Error(`Execution ${executionId} is not queued.`);
-    const parsed = executeWorkflowSchema.safeParse({
-      executionId: execution.id,
-      workflowId: execution.workflowId ?? undefined,
-      nodes: execution.nodes,
-      edges: execution.edges,
-      input: execution.input,
-    });
-    if (!parsed.success) {
-      await this.failQueuedExecution(executionId, 'Stored execution payload is invalid.');
-      throw new Error('Stored execution payload is invalid.');
+    if (!Number.isInteger(attempt) || attempt < 1 || attempt > maxAttempts || maxAttempts !== execution.maxAttempts) {
+      throw new Error('Invalid execution attempt.');
     }
-    // Claim atomically so duplicate deliveries cannot execute a snapshot twice.
+    // Only the next delivery may claim this execution; stalled recovery stays off.
     const claimed = await this.prisma.execution.updateMany({
-      where: { id: executionId, status: 'QUEUED' },
-      data: { status: 'RUNNING' },
+      where: { id: executionId, status: attempt === 1 ? 'QUEUED' : 'RETRYING', attemptCount: attempt - 1 },
+      data: { status: 'RUNNING', attemptCount: attempt, maxAttempts, lastError: null, completedAt: null },
     });
-    if (claimed.count !== 1) throw new Error(`Execution ${executionId} is not queued.`);
+    if (claimed.count !== 1) throw new Error(`Execution ${executionId} cannot claim attempt ${attempt}.`);
     try {
-      const result = await executeWorkflow(parsed.data, undefined, options);
-      await this.persistExecutionResult(executionId, result);
+      const parsed = executeWorkflowSchema.parse({
+        executionId: execution.id,
+        workflowId: execution.workflowId ?? undefined,
+        nodes: execution.nodes,
+        edges: execution.edges,
+        input: execution.input,
+      });
+      const result = await executeWorkflow(parsed, undefined, { startNodeId: execution.startNodeId ?? undefined });
+      await this.persistExecutionResult(executionId, result, attempt, maxAttempts);
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Worker execution failed.';
-      await this.failQueuedExecution(executionId, message, 'RUNNING').catch(() => undefined);
+      await this.prisma.execution.updateMany({
+        where: { id: executionId, status: 'RUNNING', attemptCount: attempt },
+        data: {
+          status: attempt < maxAttempts ? 'RETRYING' : 'FAILED',
+          message, lastError: message,
+          completedAt: attempt < maxAttempts ? null : new Date(),
+        },
+      });
       throw error;
     }
+  }
+
+  async retryExecution(executionId: string) {
+    const original = await this.prisma.execution.findUnique({ where: { id: executionId } });
+    if (!original) throw new NotFoundException('Execution not found.');
+    if (original.status !== 'FAILED') throw new ConflictException('Only failed executions can be retried.');
+    const id = randomUUID();
+    await this.prisma.execution.create({
+      data: {
+        id, workflowId: original.workflowId,
+        nodes: toJson(original.nodes), edges: toJson(original.edges), input: toJson(original.input),
+        startNodeId: original.startNodeId, status: 'QUEUED', attemptCount: 0,
+        maxAttempts: WORKFLOW_MAX_ATTEMPTS, retriedFromId: original.id,
+      },
+    });
+    try {
+      await this.queue.enqueue({ executionId: id });
+    } catch {
+      await this.failQueuedExecution(id, 'Could not enqueue workflow execution.');
+      throw new ServiceUnavailableException('Workflow execution queue is unavailable.');
+    }
+    return { executionId: id, retriedFromId: original.id, status: 'QUEUED' };
   }
 
   async history(

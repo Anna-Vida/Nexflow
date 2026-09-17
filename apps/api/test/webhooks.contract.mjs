@@ -21,7 +21,7 @@ const webhook = (id, method, path) => ({
   },
 });
 
-await test('public webhook HTTP and persistence contract', { timeout: 90000 }, async (t) => {
+await test('public webhook HTTP and persistence contract', { timeout: 180000 }, async (t) => {
   // Use a dedicated Redis DB; never clear the development queue.
   const redisUrl = new URL(process.env.TEST_REDIS_URL ?? process.env.REDIS_URL ?? 'redis://127.0.0.1:6379');
   if (!process.env.TEST_REDIS_URL) redisUrl.pathname = '/15';
@@ -105,6 +105,8 @@ await test('public webhook HTTP and persistence contract', { timeout: 90000 }, a
       executionIds.push(response.body.executionId);
       const execution = await waitForExecution(response.body.executionId, ['SUCCESS', 'FAILED']);
       assert.equal(execution.status, success ? 'SUCCESS' : 'FAILED');
+      assert.equal(execution.attemptCount, success ? 1 : 3);
+      assert.equal(execution.maxAttempts, 3);
       assert.equal(execution.input.amount, amount);
       assert.equal(execution.context.amount, amount);
       assert.equal(execution.context._request.method, method);
@@ -130,10 +132,12 @@ await test('public webhook HTTP and persistence contract', { timeout: 90000 }, a
       await sleep(500);
       assert.equal((await prisma.execution.findUniqueOrThrow({ where: { id } })).status, 'QUEUED');
       const job = await queue.getJob(id);
-      assert.deepEqual(job.data, { executionId: id, startNodeId: 'post' });
-      assert.equal(job.opts.attempts, 1);
+      assert.deepEqual(job.data, { executionId: id });
+      assert.equal(job.opts.attempts, 3);
+      assert.equal(job.opts.backoff?.type ?? job.opts.backoff, 'exponential');
       await startWorker();
       await waitForExecution(id, ['RUNNING']);
+      await http.post(`/api/workflows/executions/${id}/retry`).expect(409);
       await checkExecution(response, 'POST', 15000);
     });
     await t.test('real GET query becomes workflow input', async () => {
@@ -163,6 +167,90 @@ await test('public webhook HTTP and persistence contract', { timeout: 90000 }, a
       assert.equal(pending.completedAt, null);
       await checkExecution(response, 'POST', undefined, false);
     });
+    await t.test('always-failing workflow performs exactly 3 attempts and keeps every event', async () => {
+      const response = await http.post(endpoint).send({}).expect(202);
+      const id = response.body.executionId;
+      executionIds.push(id);
+      const statuses = new Set();
+      const deadline = Date.now() + 40000;
+      let execution;
+      while (Date.now() < deadline) {
+        execution = await prisma.execution.findUniqueOrThrow({ where: { id }, include: { events: true } });
+        if (execution.status !== 'QUEUED') statuses.add(execution.status);
+        if (execution.status === 'RETRYING') {
+          assert.equal(execution.completedAt, null);
+          assert.ok(execution.lastError);
+          await http.post(`/api/workflows/executions/${id}/retry`).expect(409);
+        }
+        if (execution.status === 'FAILED') break;
+        await sleep(250);
+      }
+      assert.equal(execution.status, 'FAILED');
+      for (const expected of ['RUNNING', 'RETRYING', 'FAILED']) {
+        assert.ok(statuses.has(expected), `Expected to observe ${expected}; saw ${[...statuses].join(',')}`);
+      }
+      assert.equal(execution.attemptCount, 3);
+      assert.equal(execution.maxAttempts, 3);
+      assert.match(execution.lastError, /Input field "amount" does not exist/);
+      assert.ok(execution.completedAt);
+      assert.deepEqual([...new Set(execution.events.map((event) => event.attempt))].sort((a, b) => a - b), [1, 2, 3]);
+      for (const attempt of [1, 2, 3]) {
+        const attemptEvents = execution.events.filter((event) => event.attempt === attempt);
+        assert.ok(attemptEvents.some((event) => event.nodeId === 'post'));
+        assert.ok(attemptEvents.some((event) => event.nodeId === 'condition' && event.status === 'failed'));
+      }
+      const job = await queue.getJob(id);
+      assert.equal(job.attemptsMade, 3);
+    });
+
+    await t.test('manual retry creates a new linked execution and rejects invalid sources', async () => {
+      await stopWorker();
+      const queued = await http.post(endpoint).send({ amount: 15000 }).expect(202);
+      executionIds.push(queued.body.executionId);
+      await http.post(`/api/workflows/executions/${queued.body.executionId}/retry`).expect(409);
+      await startWorker();
+      const success = await waitForExecution(queued.body.executionId, ['SUCCESS']);
+      assert.equal(success.attemptCount, 1);
+      await http.post(`/api/workflows/executions/${queued.body.executionId}/retry`).expect(409);
+
+      const failed = await prisma.execution.findFirstOrThrow({ where: { status: 'FAILED', id: { in: executionIds } } });
+      const before = await prisma.execution.findUniqueOrThrow({ where: { id: failed.id } });
+      const response = await http.post(`/api/workflows/executions/${failed.id}/retry`).expect(202);
+      assert.equal(response.body.retriedFromId, failed.id);
+      assert.equal(response.body.status, 'QUEUED');
+      assert.notEqual(response.body.executionId, failed.id);
+      executionIds.push(response.body.executionId);
+      const after = await prisma.execution.findUniqueOrThrow({ where: { id: failed.id } });
+      assert.deepEqual(after, before);
+      const retried = await waitForExecution(response.body.executionId, ['FAILED']);
+      assert.equal(retried.retriedFromId, failed.id);
+      assert.equal(retried.status, 'FAILED');
+      assert.equal(retried.attemptCount, 3);
+      assert.equal(retried.maxAttempts, 3);
+      assert.deepEqual(retried.nodes, before.nodes);
+      assert.deepEqual(retried.edges, before.edges);
+      assert.deepEqual(retried.input, before.input);
+      assert.equal(retried.startNodeId, before.startNodeId);
+      assert.deepEqual(await prisma.execution.findUniqueOrThrow({ where: { id: failed.id } }), before);
+      await http.post('/api/workflows/executions/00000000-0000-4000-8000-000000000000/retry').expect(404);
+    });
+
+    await t.test('editor Run remains synchronous with one attempt and no Redis job', async () => {
+      const id = randomUUID();
+      executionIds.push(id);
+      const response = await http.post('/api/workflows/execute').send({
+        executionId: id, workflowId: workflow.id, nodes, edges, input: {},
+      }).expect(201);
+      assert.equal(response.body.success, false);
+      const execution = await prisma.execution.findUniqueOrThrow({ where: { id }, include: { events: true } });
+      assert.equal(execution.status, 'FAILED');
+      assert.equal(execution.attemptCount, 1);
+      assert.equal(execution.maxAttempts, 1);
+      assert.ok(execution.completedAt);
+      assert.deepEqual([...new Set(execution.events.map((event) => event.attempt))], [1]);
+      assert.equal(await queue.getJob(id), undefined);
+    });
+
     await t.test('webhook with an incoming edge returns 400 without creating an execution', async () => {
       const before = await prisma.execution.count({ where: { workflowId: workflow.id } });
       await prisma.workflowVersion.update({

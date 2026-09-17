@@ -5,7 +5,8 @@ import { redisConnection, WORKFLOW_QUEUE, type WorkflowJobData } from './workflo
 export function createWorkflowWorker(workflows: WorkflowsService) {
   const worker = new Worker<WorkflowJobData>(WORKFLOW_QUEUE, async (job) => {
     const result = await workflows.processQueuedExecution(job.data.executionId, {
-      startNodeId: job.data.startNodeId,
+      attempt: job.attemptsMade + 1,
+      maxAttempts: job.opts.attempts ?? 1,
     });
     if (!result.success) throw new Error(result.message);
     return result;

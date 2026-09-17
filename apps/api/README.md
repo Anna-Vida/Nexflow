@@ -38,10 +38,12 @@ local `.env` file. Redis defaults to `redis://127.0.0.1:6379`; use the same URL
 for both API and worker. Configure Redis with `maxmemory-policy noeviction` and
 persistence appropriate for your durability requirements.
 
-For the Windows/WSL development setup, start Redis with:
+For the Windows/WSL development setup, keep a WSL terminal open while using Redis
+(WSL may shut down idle distributions, stopping their services):
 
 ```powershell
-wsl -d Ubuntu -u root --exec service redis-server start
+wsl -d Ubuntu -u root --exec sh -c 'service redis-server start; exec bash'
+# In another terminal:
 wsl -d Ubuntu --exec redis-cli ping
 ```
 
@@ -55,13 +57,22 @@ npm run start:worker
 ```
 
 Webhooks return HTTP 202 after enqueueing; manual Run remains synchronous. Redis
-holds execution IDs and trigger IDs, while PostgreSQL holds workflow snapshots,
-inputs, results, and events. Jobs waiting while the worker is stopped are processed
-when it starts again. This milestone uses one attempt, without automatic retries
-or stalled-job reprocessing. A hard-killed worker can leave a PostgreSQL execution
-in RUNNING; crash reconciliation and retry controls are not implemented yet.
+holds execution IDs, while PostgreSQL holds workflow snapshots, inputs, results,
+events, trigger IDs, and attempt history. Jobs waiting while the worker is stopped
+are processed when it starts again. Failed jobs retry automatically up to 3 times
+with exponential backoff (1s, 2s); the execution row records every attempt
+(`attemptCount` / `maxAttempts` / `lastError`, event rows tagged per attempt) and
+moves through QUEUED → RUNNING → RETRYING → FAILED. `POST
+/api/workflows/executions/:id/retry` creates a fresh QUEUED execution linked
+through `retriedFromId` (only FAILED executions, 409 otherwise); the dashboard
+shows attempts, groups events per attempt, and offers Retry for failed runs.
+Stalled-job recovery stays disabled (`maxStalledCount: 0`) until idempotency
+protection ships. A hard-killed worker can leave a PostgreSQL execution
+in RUNNING; crash reconciliation is not implemented yet.
 Enqueue timeouts return 503 but cannot cancel a Redis command already in flight;
-a job already claimed by the worker may still finish.
+a job already claimed by the worker may still finish. Retrying re-executes nodes
+that succeeded in earlier attempts; HTTP nodes with side effects need the upcoming
+idempotency work to be safe against duplicate delivery.
 
 Run `npm run test:webhooks` with PostgreSQL and Redis available. It launches its
 own worker and uses Redis database 15 by default. Set `TEST_REDIS_URL` to override
