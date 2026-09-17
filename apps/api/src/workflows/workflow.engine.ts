@@ -1,4 +1,5 @@
 import type { ExecuteWorkflowDto } from './workflow.schemas.js';
+import { executeHttpRequest } from './http-executor.js';
 
 type WorkflowNode = ExecuteWorkflowDto['nodes'][number];
 type WorkflowEdge = ExecuteWorkflowDto['edges'][number];
@@ -260,46 +261,14 @@ async function executeNode(
     };
   }
 
-  let parsedUrl: URL;
-
-  try {
-    parsedUrl = new URL(data.config.url);
-  } catch {
-    throw new Error(
-      `Invalid HTTP URL: ${data.config.url}`,
-    );
-  }
-
-  JSON.parse(
-    data.config.headers || '{}',
-  );
-
-  if (
-    data.config.method !== 'GET' &&
-    data.config.body.trim()
-  ) {
-    JSON.parse(data.config.body);
-  }
-
-  await sleep(250);
-
-  const responseKey =
-    `${node.id}.response`;
+  const httpResult = await executeHttpRequest(node.id, data.config, context);
 
   return {
     context: {
       ...context,
-
-      [responseKey]: {
-        status: 200,
-        simulated: true,
-        method: data.config.method,
-        url: parsedUrl.toString(),
-      },
+      [`${node.id}.response`]: httpResult.response,
     },
-
-    message:
-      `${data.config.method} ${parsedUrl.toString()} → 200 simulated`,
+    message: httpResult.message,
   };
 }
 

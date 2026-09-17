@@ -232,7 +232,8 @@ function NodeConfigPanel({ node, onChange, onClose }: Props) {
             <span>Timeout (ms)</span>
             <input
               type="number"
-              min="1"
+              min="100"
+              max="30000"
               value={data.config.timeout}
               onChange={(event) =>
                 update({
@@ -241,6 +242,34 @@ function NodeConfigPanel({ node, onChange, onClose }: Props) {
               }
             />
           </label>
+
+          <label className="config-field">
+            <span>Retries</span>
+            <input
+              type="number"
+              min="0"
+              max="3"
+              value={data.config.retries ?? 0}
+              onChange={(event) => update({ retries: Number(event.target.value) })}
+            />
+          </label>
+
+          <label className="config-field">
+            <span>Retry delay (ms)</span>
+            <input
+              type="number"
+              min="100"
+              max="5000"
+              value={data.config.retryDelayMs ?? 500}
+              onChange={(event) => update({ retryDelayMs: Number(event.target.value) })}
+            />
+          </label>
+
+          <div className="config-info">
+            Use variables such as <code>{'{{amount}}'}</code>, <code>{'{{message}}'}</code>,
+            or previous HTTP results like <code>{'{{http-1.response.status}}'}</code>.
+            Retries apply only to GET, PUT, and DELETE requests.
+          </div>
         </>
       )
     }

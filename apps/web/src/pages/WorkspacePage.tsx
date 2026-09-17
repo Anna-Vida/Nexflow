@@ -139,6 +139,8 @@ const initialNodes: WorkflowNode[] = [
         headers: '{\n  "Content-Type": "application/json"\n}',
         body: '{\n  "status": "approved"\n}',
         timeout: 5000,
+        retries: 0,
+        retryDelayMs: 500,
       },
     },
   },
@@ -205,6 +207,8 @@ const nodeTemplates: Record<NodeKind, WorkflowNodeData> = {
       headers: '{}',
       body: '{}',
       timeout: 5000,
+      retries: 0,
+      retryDelayMs: 500,
     },
   },
 
@@ -271,8 +275,18 @@ function validateNode(data: WorkflowNodeData) {
       return 'HTTP Request requires a valid URL.'
     }
 
-    if (data.config.timeout <= 0) {
-      return 'HTTP timeout must be greater than zero.'
+    if (!Number.isInteger(data.config.timeout) || data.config.timeout < 100 || data.config.timeout > 30000) {
+      return 'HTTP timeout must be between 100 and 30000 ms.'
+    }
+
+    const retries = data.config.retries ?? 0
+    if (!Number.isInteger(retries) || retries < 0 || retries > 3) {
+      return 'HTTP retries must be between 0 and 3.'
+    }
+
+    const retryDelayMs = data.config.retryDelayMs ?? 500
+    if (!Number.isInteger(retryDelayMs) || retryDelayMs < 100 || retryDelayMs > 5000) {
+      return 'Retry delay must be between 100 and 5000 ms.'
     }
 
     return null

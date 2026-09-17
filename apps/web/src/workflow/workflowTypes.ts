@@ -21,6 +21,8 @@ export type HttpConfig = {
   headers: string
   body: string
   timeout: number
+  retries?: number
+  retryDelayMs?: number
 }
 
 export type DelayConfig = {

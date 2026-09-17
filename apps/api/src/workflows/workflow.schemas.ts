@@ -50,10 +50,12 @@ const httpDataSchema = z
         'PATCH',
         'DELETE',
       ]),
-      url: z.string(),
-      headers: z.string(),
-      body: z.string(),
-      timeout: z.number().positive(),
+      url: z.string().min(1).max(2048),
+      headers: z.string().max(16_384),
+      body: z.string().max(65_536),
+      timeout: z.number().int().min(100).max(30_000),
+      retries: z.number().int().min(0).max(3).default(0),
+      retryDelayMs: z.number().int().min(100).max(5000).default(500),
     }),
   })
   .passthrough();
