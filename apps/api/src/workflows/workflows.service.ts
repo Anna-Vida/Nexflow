@@ -362,4 +362,17 @@ export class WorkflowsService {
       },
     });
   }
+
+  async executionDetails(executionId: string) {
+    const execution = await this.prisma.execution.findUnique({
+      where: { id: executionId },
+      include: {
+        workflow: { select: { id: true, name: true } },
+        events: { orderBy: { timestamp: 'asc' } },
+      },
+    });
+
+    if (!execution) throw new NotFoundException('Execution not found.');
+    return execution;
+  }
 }

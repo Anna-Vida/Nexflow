@@ -7,8 +7,10 @@ import {
   useNavigate,
 } from 'react-router'
 import {
+  getExecutionRemote,
   getRecentExecutionsRemote,
   listWorkflowsRemote,
+  type ExecutionDetail,
   type DashboardExecution,
   type DashboardWorkflow,
 } from '../workflow/workflowApi'
@@ -79,6 +81,23 @@ function DashboardPage() {
   ] = useState<
     string | null
   >(null)
+
+  const [selectedExecution, setSelectedExecution] = useState<ExecutionDetail | null>(null)
+  const [executionLoading, setExecutionLoading] = useState(false)
+  const [executionError, setExecutionError] = useState<string | null>(null)
+
+  const openExecution = async (executionId: string) => {
+    setExecutionLoading(true)
+    setExecutionError(null)
+    setSelectedExecution(null)
+    try {
+      setSelectedExecution(await getExecutionRemote(executionId))
+    } catch (loadError) {
+      setExecutionError(loadError instanceof Error ? loadError.message : 'Could not load execution.')
+    } finally {
+      setExecutionLoading(false)
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -362,6 +381,8 @@ function DashboardPage() {
               <span>
                 Started
               </span>
+
+              <span>Details</span>
             </div>
 
             {!loading &&
@@ -421,12 +442,216 @@ function DashboardPage() {
                       execution.startedAt,
                     )}
                   </span>
+
+                  <button
+                    className="execution-details-button"
+                    onClick={() => void openExecution(execution.id)}
+                  >
+                    View →
+                  </button>
                 </div>
               ),
             )}
           </div>
         </section>
       </main>
+      {(
+        selectedExecution ||
+        executionLoading ||
+        executionError
+      ) && (
+        <div
+          className="execution-overlay"
+          onClick={() => {
+            setSelectedExecution(null)
+            setExecutionError(null)
+          }}
+        >
+          <aside
+            className="execution-drawer"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <div className="execution-drawer-header">
+              <div>
+                <span>
+                  EXECUTION
+                </span>
+
+                <strong>
+                  {selectedExecution
+                    ?.workflow?.name ??
+                    'Workflow run'}
+                </strong>
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedExecution(
+                    null,
+                  )
+
+                  setExecutionError(
+                    null,
+                  )
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {executionLoading && (
+              <div className="execution-drawer-state">
+                Loading execution...
+              </div>
+            )}
+
+            {executionError && (
+              <div className="execution-drawer-state error">
+                {executionError}
+              </div>
+            )}
+
+            {selectedExecution && (
+              <div className="execution-drawer-body">
+                <div className="execution-summary">
+                  <div>
+                    <span>
+                      Status
+                    </span>
+
+                    <strong
+                      className={`status-badge ${selectedExecution.status.toLowerCase()}`}
+                    >
+                      {
+                        selectedExecution.status
+                      }
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      Duration
+                    </span>
+
+                    <strong>
+                      {formatDuration(
+                        selectedExecution.durationMs,
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      Started
+                    </span>
+
+                    <strong>
+                      {formatDate(
+                        selectedExecution.startedAt,
+                      )}
+                    </strong>
+                  </div>
+                </div>
+
+                {selectedExecution.message && (
+                  <section className="execution-detail-section">
+                    <h3>
+                      Result
+                    </h3>
+
+                    <p>
+                      {
+                        selectedExecution.message
+                      }
+                    </p>
+                  </section>
+                )}
+
+                <section className="execution-detail-section">
+                  <h3>
+                    Node events
+                  </h3>
+
+                  <div className="event-timeline">
+                    {selectedExecution.events.map(
+                      (event) => (
+                        <div
+                          className="event-item"
+                          key={event.id}
+                        >
+                          <span
+                            className={`event-dot ${event.status.toLowerCase()}`}
+                          />
+
+                          <div>
+                            <div className="event-item-top">
+                              <strong>
+                                {
+                                  event.nodeId
+                                }
+                              </strong>
+
+                              <span>
+                                {
+                                  event.status
+                                }
+                              </span>
+                            </div>
+
+                            <p>
+                              {
+                                event.message
+                              }
+                            </p>
+
+                            <small>
+                              {formatDate(
+                                event.timestamp,
+                              )}
+                            </small>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </section>
+
+                <section className="execution-detail-section">
+                  <h3>
+                    Input
+                  </h3>
+
+                  <pre>
+                    {JSON.stringify(
+                      selectedExecution.input,
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </section>
+
+                {selectedExecution.context && (
+                  <section className="execution-detail-section">
+                    <h3>
+                      Final context
+                    </h3>
+
+                    <pre>
+                      {JSON.stringify(
+                        selectedExecution.context,
+                        null,
+                        2,
+                      )}
+                    </pre>
+                  </section>
+                )}
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
     </div>
   )
 }

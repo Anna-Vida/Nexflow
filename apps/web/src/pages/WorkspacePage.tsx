@@ -466,6 +466,12 @@ function WorkspacePage() {
   const saveWorkflow = async () => {
     if (isSaving) return
 
+    const cleanName = workflowName.trim()
+    if (!cleanName) {
+      setSaveStatus('Workflow name is required')
+      return
+    }
+
     const invalidNodes = nodes
       .map((node) => ({
         node,
@@ -486,15 +492,16 @@ function WorkspacePage() {
     setSaveStatus('Saving...')
 
     try {
-      const result = await saveWorkflowRemote(workflowId, workflowName, nodes, edges)
+      const result = await saveWorkflowRemote(workflowId, cleanName, nodes, edges)
       setWorkflowId(result.workflowId)
       setWorkflowRevision(result.version)
+      setWorkflowName(cleanName)
 
       const workflow: WorkflowDocument = {
         version: 1,
         remoteId: result.workflowId,
         revision: result.version,
-        name: workflowName,
+        name: cleanName,
         updatedAt: result.updatedAt,
         nodes,
         edges,
@@ -637,7 +644,21 @@ function WorkspacePage() {
           <div className="header-divider" />
 
           <div className="workflow-title">
-            <strong>{workflowName}</strong>
+            <input
+              className="workflow-title-input"
+              aria-label="Workflow name"
+              value={workflowName}
+              maxLength={120}
+              disabled={isSaving || isRunning}
+              onChange={(event) => {
+                setWorkflowName(event.target.value)
+                markUnsaved()
+              }}
+              onBlur={() => {
+                const trimmed = workflowName.trim()
+                setWorkflowName(trimmed || 'Untitled workflow')
+              }}
+            />
             <span>{workflowRevision > 0 ? `v${workflowRevision}` : 'Draft'}</span>
           </div>
         </div>

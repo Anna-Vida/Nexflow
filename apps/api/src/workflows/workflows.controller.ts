@@ -17,7 +17,7 @@ import {
 
 const workflowIdSchema = z.string().uuid();
 
-function parseWorkflowId(value: string) {
+function parseUuid(value: string) {
   const parsed = workflowIdSchema.safeParse(value);
   if (!parsed.success) throw new BadRequestException('Invalid workflow ID.');
   return parsed.data;
@@ -40,9 +40,14 @@ export class WorkflowsController {
     return this.workflowsService.recentExecutions();
   }
 
+  @Get('executions/:executionId')
+  executionDetails(@Param('executionId') executionId: string) {
+    return this.workflowsService.executionDetails(parseUuid(executionId));
+  }
+
   @Get(':workflowId')
   getById(@Param('workflowId') workflowId: string) {
-    return this.workflowsService.getById(parseWorkflowId(workflowId));
+    return this.workflowsService.getById(parseUuid(workflowId));
   }
 
   @Post('save')
@@ -97,6 +102,6 @@ export class WorkflowsController {
     workflowId: string,
   ) {
     return this.workflowsService
-      .history(parseWorkflowId(workflowId));
+      .history(parseUuid(workflowId));
   }
 }

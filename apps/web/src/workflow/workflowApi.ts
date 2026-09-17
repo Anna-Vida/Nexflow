@@ -182,3 +182,32 @@ export function getRecentExecutionsRemote() {
 export function getWorkflowRemote(workflowId: string) {
   return getRemote<RemoteWorkflow>(`/api/workflows/${workflowId}`)
 }
+
+export type ExecutionDetailEvent = {
+  id: string
+  executionId: string
+  nodeId: string
+  status: string
+  message: string
+  timestamp: string
+}
+
+export type ExecutionDetail = {
+  id: string
+  workflowId: string | null
+  status: string
+  nodes: unknown
+  edges: unknown
+  input: Record<string, unknown>
+  context: Record<string, unknown> | null
+  message: string | null
+  durationMs: number | null
+  startedAt: string
+  completedAt: string | null
+  workflow: { id: string; name: string } | null
+  events: ExecutionDetailEvent[]
+}
+
+export function getExecutionRemote(executionId: string) {
+  return getRemote<ExecutionDetail>(`/api/workflows/executions/${executionId}`)
+}

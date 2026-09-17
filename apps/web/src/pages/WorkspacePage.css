@@ -909,3 +909,32 @@
   font-size: 10px;
   text-decoration: none;
 }
+
+.workflow-title-input {
+  width: min(240px, 24vw);
+  height: 31px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: none;
+  color: #e5e5e8;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.workflow-title-input:hover {
+  border-color: #292a30;
+  background: #121317;
+}
+
+.workflow-title-input:focus {
+  border-color: #5d49b0;
+  background: #14151a;
+  box-shadow: 0 0 0 2px rgba(115, 87, 241, 0.1);
+}
+
+.workflow-title-input:disabled {
+  opacity: 0.6;
+}
