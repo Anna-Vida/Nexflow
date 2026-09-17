@@ -190,6 +190,7 @@ export type ExecutionDetailEvent = {
   status: string
   message: string
   timestamp: string
+  context?: Record<string, unknown>
 }
 
 export type ExecutionDetail = {

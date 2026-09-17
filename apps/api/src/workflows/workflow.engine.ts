@@ -17,6 +17,7 @@ export type ExecutionEvent = {
   status: ExecutionStatus;
   message: string;
   timestamp: string;
+  context?: WorkflowContext;
 };
 
 export type ExecutionEventHandler = (event: ExecutionEvent) => void;
@@ -291,12 +292,14 @@ export async function executeWorkflow(
     nodeId: string,
     status: ExecutionStatus,
     message: string,
+    contextSnapshot?: WorkflowContext,
   ) => {
     const event: ExecutionEvent = {
       nodeId,
       status,
       message,
       timestamp: new Date().toISOString(),
+      ...(contextSnapshot ? { context: structuredClone(contextSnapshot) } : {}),
     };
 
     events.push(event);
@@ -460,6 +463,7 @@ export async function executeWorkflow(
         nodeId,
         'success',
         result.message,
+        context,
       );
 
       for (
@@ -501,6 +505,7 @@ export async function executeWorkflow(
         nodeId,
         'failed',
         message,
+        context,
       );
 
       for (const remaining of nodes) {

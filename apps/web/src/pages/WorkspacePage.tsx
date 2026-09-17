@@ -19,6 +19,7 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import NodeConfigPanel from '../components/NodeConfigPanel'
+import ExecutionDataPanel from '../components/ExecutionDataPanel'
 import { executionSocket } from '../workflow/executionSocket'
 import { executeWorkflowRemote, getWorkflowRemote, saveWorkflowRemote } from '../workflow/workflowApi'
 import type {
@@ -227,6 +228,39 @@ const nodeTemplates: Record<NodeKind, WorkflowNodeData> = {
 
 const STORAGE_KEY = 'nexflow:workflow:draft'
 
+const DEFAULT_TEST_INPUT = JSON.stringify({
+  amount: 12500,
+  total: 5000,
+  message: 'Hello from NexFlow',
+  status: 'pending',
+  approved: true,
+}, null, 2)
+
+function testInputKey(workflowId?: string) {
+  return `nexflow:test-input:${workflowId ?? 'draft'}`
+}
+
+function parseTestInput(value: string): Record<string, unknown> {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(value)
+  } catch {
+    throw new Error('Test input must be valid JSON.')
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error('Test input must be a JSON object.')
+  }
+  return parsed as Record<string, unknown>
+}
+
+function inputVariables(value: string): Record<string, unknown> {
+  try {
+    return parseTestInput(value)
+  } catch {
+    return {}
+  }
+}
+
 function loadSavedWorkflow(): WorkflowDocument | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -335,6 +369,26 @@ function WorkspacePage() {
   const [isRunning, setIsRunning] = useState(false)
   const [runState, setRunState] = useState<'ready' | 'running' | 'success' | 'failed'>('ready')
   const [runMessage, setRunMessage] = useState('Ready to execute')
+  const [dataPanelOpen, setDataPanelOpen] = useState(false)
+  const [testInputScope, setTestInputScope] = useState(routeWorkflowId ?? savedWorkflow?.remoteId ?? 'draft')
+  const [testInputText, setTestInputText] = useState(() =>
+    localStorage.getItem(testInputKey(routeWorkflowId ?? savedWorkflow?.remoteId)) ?? DEFAULT_TEST_INPUT,
+  )
+  const [testInputError, setTestInputError] = useState<string | null>(null)
+  const [variableContext, setVariableContext] = useState<Record<string, unknown>>(() => inputVariables(testInputText))
+
+  useEffect(() => {
+    localStorage.setItem(testInputKey(testInputScope === 'draft' ? undefined : testInputScope), testInputText)
+  }, [testInputScope, testInputText])
+
+  useEffect(() => {
+    if (!routeWorkflowId || routeWorkflowId === testInputScope) return
+    const nextText = localStorage.getItem(testInputKey(routeWorkflowId)) ?? DEFAULT_TEST_INPUT
+    setTestInputScope(routeWorkflowId)
+    setTestInputText(nextText)
+    setTestInputError(null)
+    setVariableContext(inputVariables(nextText))
+  }, [routeWorkflowId, testInputScope])
 
   useEffect(() => {
     if (!routeWorkflowId) {
@@ -385,14 +439,6 @@ function WorkspacePage() {
     })),
     [nodes, runtimeStates],
   )
-
-  const testInput = useMemo(() => ({
-    amount: 12500,
-    total: 5000,
-    message: 'Hello from NexFlow',
-    status: 'pending',
-    approved: true,
-  }), [])
 
   const selectedNode =
     nodes.find((node) => node.id === selectedNodeId) ?? null
@@ -508,6 +554,7 @@ function WorkspacePage() {
     try {
       const result = await saveWorkflowRemote(workflowId, cleanName, nodes, edges)
       setWorkflowId(result.workflowId)
+      setTestInputScope(result.workflowId)
       setWorkflowRevision(result.version)
       setWorkflowName(cleanName)
 
@@ -542,8 +589,40 @@ function WorkspacePage() {
     markUnsaved()
   }
 
+  const formatTestInput = () => {
+    try {
+      const parsed = parseTestInput(testInputText)
+      setTestInputText(JSON.stringify(parsed, null, 2))
+      setVariableContext(parsed)
+      setTestInputError(null)
+    } catch (error) {
+      setTestInputError(error instanceof Error ? error.message : 'Invalid JSON.')
+    }
+  }
+
+  const resetTestInput = () => {
+    setTestInputText(DEFAULT_TEST_INPUT)
+    setTestInputError(null)
+    setVariableContext(inputVariables(DEFAULT_TEST_INPUT))
+  }
+
   const runWorkflow = async () => {
     if (isRunning) return
+
+    let testInput: Record<string, unknown>
+    try {
+      testInput = parseTestInput(testInputText)
+      setTestInputError(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid test input.'
+      setTestInputError(message)
+      setRunState('failed')
+      setRunMessage(message)
+      setDataPanelOpen(true)
+      return
+    }
+
+    setVariableContext(structuredClone(testInput))
 
     const invalidNodes = nodes
       .map((node) => ({ node, error: validateNode(node.data) }))
@@ -572,12 +651,14 @@ function WorkspacePage() {
       nodeId: string
       status: 'running' | 'success' | 'failed' | 'skipped'
       message: string
+      context?: Record<string, unknown>
     }) => {
       if (event.executionId !== executionId) return
       setRuntimeStates((current) => ({
         ...current,
         [event.nodeId]: { status: event.status, message: event.message },
       }))
+      if (event.context) setVariableContext(event.context)
     }
 
     executionSocket.on('execution:event', handleExecutionEvent)
@@ -622,6 +703,7 @@ function WorkspacePage() {
         event.nodeId,
         { status: event.status, message: event.message },
       ])))
+      setVariableContext(result.context)
       setRunState(result.success ? 'success' : 'failed')
       setRunMessage(`${result.message} (${result.durationMs}ms)`)
     } catch (error) {
@@ -689,6 +771,13 @@ function WorkspacePage() {
 
             {saveStatus}
           </span>
+
+          <button
+            className="workspace-secondary-button"
+            onClick={() => setDataPanelOpen(true)}
+          >
+            {'{ }'} Test data
+          </button>
 
           <button
             className="workspace-secondary-button"
@@ -815,7 +904,7 @@ function WorkspacePage() {
             />
           </ReactFlow>
 
-          <div className={`execution-banner ${runState}`} title={`Test input: ${JSON.stringify(testInput)}`}>
+          <div className={`execution-banner ${runState}`} title={`Test input: ${testInputText}`}>
             <span className="execution-banner-dot" />
             <div>
               <strong>{runState === 'ready' ? 'Execution' : runState === 'running' ? 'Running workflow' : runState === 'success' ? 'Execution complete' : 'Execution failed'}</strong>
@@ -838,6 +927,21 @@ function WorkspacePage() {
           onClose={() => setSelectedNodeId(null)}
         />
       </div>
+      <ExecutionDataPanel
+        open={dataPanelOpen}
+        inputText={testInputText}
+        inputError={testInputError}
+        variables={variableContext}
+        isRunning={isRunning}
+        onClose={() => setDataPanelOpen(false)}
+        onInputChange={(value) => {
+          setTestInputText(value)
+          setTestInputError(null)
+          if (!isRunning) setVariableContext(inputVariables(value))
+        }}
+        onFormat={formatTestInput}
+        onReset={resetTestInput}
+      />
     </div>
   )
 }
