@@ -1,0 +1,439 @@
+.dashboard {
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      circle at 70% 0%,
+      rgba(115, 87, 241, 0.1),
+      transparent 30rem
+    ),
+    #08090c;
+  color: #ededf0;
+}
+
+.dashboard-nav {
+  width: min(
+    1200px,
+    calc(100% - 48px)
+  );
+  height: 72px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #222329;
+}
+
+.dashboard-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.dashboard-logo {
+  width: 29px;
+  height: 29px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 8px;
+  background: #7357f1;
+  transform: rotate(-6deg);
+}
+
+.dashboard-logo span {
+  width: 3px;
+  height: 13px;
+  border-radius: 3px;
+  background: white;
+}
+
+.dashboard-logo span:first-child {
+  transform: translateY(-2px);
+}
+
+.dashboard-logo span:last-child {
+  transform: translateY(2px);
+}
+
+.dashboard-nav-label {
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 1px solid #292a30;
+  color: #64656d;
+  font-size: 11px;
+}
+
+.dashboard-create-top {
+  margin-left: auto;
+  padding: 10px 15px;
+  border: 1px solid #7357f1;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+  background: #7357f1;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dashboard-main {
+  width: min(
+    1200px,
+    calc(100% - 48px)
+  );
+  margin: 0 auto;
+  padding-bottom: 100px;
+}
+
+.dashboard-hero {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #202126;
+}
+
+.dashboard-eyebrow {
+  color: #7462ce;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.dashboard-hero h1 {
+  margin: 13px 0 10px;
+  color: white;
+  font-size: clamp(
+    38px,
+    5vw,
+    58px
+  );
+  letter-spacing: -3px;
+}
+
+.dashboard-hero p {
+  margin: 0;
+  color: #6d6e77;
+  font-size: 14px;
+}
+
+.dashboard-primary {
+  min-width: 155px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 25px;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  color: white;
+  background: #7357f1;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dashboard-error {
+  margin-top: 24px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid #563038;
+  border-radius: 10px;
+  background: #171014;
+}
+
+.dashboard-error strong {
+  color: #db858c;
+  font-size: 11px;
+}
+
+.dashboard-error span {
+  color: #8b6267;
+  font-size: 10px;
+}
+
+.dashboard-section {
+  padding-top: 55px;
+}
+
+.dashboard-section-header {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-section-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.dashboard-section-header h2 {
+  margin: 0;
+  color: #eeeeef;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+}
+
+.dashboard-section-header span {
+  color: #56575f;
+  font-size: 9px;
+}
+
+.dashboard-section-header button {
+  border: 0;
+  cursor: pointer;
+  color: #8270d8;
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+}
+
+.workflow-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, 1fr);
+  gap: 12px;
+}
+
+.workflow-card {
+  min-height: 185px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  border: 1px solid #24252b;
+  border-radius: 13px;
+  cursor: pointer;
+  color: inherit;
+  background: #101115;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.workflow-card:hover {
+  transform: translateY(-2px);
+  border-color: #464151;
+  background: #131419;
+}
+
+.workflow-card-top {
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.workflow-card-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #302b46;
+  border-radius: 9px;
+  color: #9c86ff;
+  background: #181520;
+}
+
+.workflow-version {
+  color: #65666e;
+  font-size: 9px;
+}
+
+.workflow-card > strong {
+  color: #d8d8dc;
+  font-size: 13px;
+}
+
+.workflow-card > p {
+  margin: 6px 0 22px;
+  color: #5b5c64;
+  font-size: 9px;
+}
+
+.workflow-card-bottom {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #606169;
+  font-size: 9px;
+}
+
+.status-badge {
+  width: fit-content;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.status-badge.success {
+  color: #6ed5a2;
+  background: #14231c;
+  border: 1px solid #274938;
+}
+
+.status-badge.failed {
+  color: #df7882;
+  background: #271619;
+  border: 1px solid #4d292e;
+}
+
+.status-badge.running {
+  color: #aa98f4;
+  background: #1c1929;
+  border: 1px solid #3e3561;
+}
+
+.status-badge.never {
+  color: #73747c;
+  border: 1px solid #32333a;
+}
+
+.dashboard-empty {
+  min-height: 190px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  border: 1px dashed #292a30;
+  border-radius: 12px;
+  color: #55565e;
+  text-align: center;
+  font-size: 11px;
+}
+
+.dashboard-empty strong {
+  color: #aaaab1;
+}
+
+.dashboard-empty p {
+  margin: 0;
+  font-size: 9px;
+}
+
+.dashboard-empty button {
+  margin-top: 9px;
+  border: 0;
+  cursor: pointer;
+  color: #9d8aef;
+  background: transparent;
+}
+
+.executions-section {
+  margin-top: 25px;
+}
+
+.execution-table {
+  overflow: hidden;
+  border: 1px solid #24252b;
+  border-radius: 12px;
+  background: #0f1014;
+}
+
+.execution-row {
+  min-height: 56px;
+  padding: 0 18px;
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 2fr)
+    minmax(90px, 0.7fr)
+    minmax(90px, 0.7fr)
+    minmax(150px, 1fr);
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #202126;
+  color: #676870;
+  font-size: 10px;
+}
+
+.execution-row:last-child {
+  border-bottom: 0;
+}
+
+.execution-heading {
+  min-height: 42px;
+  color: #484950;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.execution-workflow {
+  width: fit-content;
+  border: 0;
+  cursor: pointer;
+  color: #b8b9bf;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+
+.execution-workflow:disabled {
+  cursor: default;
+  color: #56575f;
+}
+
+.execution-empty {
+  padding: 30px;
+  color: #55565e;
+  text-align: center;
+  font-size: 10px;
+}
+
+@media (
+  max-width: 850px
+) {
+  .workflow-grid {
+    grid-template-columns:
+      1fr 1fr;
+  }
+}
+
+@media (
+  max-width: 600px
+) {
+  .dashboard-nav,
+  .dashboard-main {
+    width: calc(
+      100% - 30px
+    );
+  }
+
+  .dashboard-nav-label {
+    display: none;
+  }
+
+  .dashboard-hero {
+    min-height: 280px;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  .workflow-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .execution-table {
+    overflow-x: auto;
+  }
+
+  .execution-row {
+    min-width: 650px;
+  }
+}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useParams } from 'react-router'
 import {
   addEdge,
   Background,
@@ -20,7 +20,7 @@ import {
 } from '@xyflow/react'
 import NodeConfigPanel from '../components/NodeConfigPanel'
 import { executionSocket } from '../workflow/executionSocket'
-import { executeWorkflowRemote, saveWorkflowRemote } from '../workflow/workflowApi'
+import { executeWorkflowRemote, getWorkflowRemote, saveWorkflowRemote } from '../workflow/workflowApi'
 import type {
   NodeKind,
   NodeRuntimeState,
@@ -286,6 +286,7 @@ function validateNode(data: WorkflowNodeData) {
 }
 
 function WorkspacePage() {
+  const { workflowId: routeWorkflowId } = useParams()
   useEffect(() => {
     executionSocket.connect()
     return () => {
@@ -293,7 +294,10 @@ function WorkspacePage() {
     }
   }, [])
 
-  const savedWorkflow = useMemo(() => loadSavedWorkflow(), [])
+  const savedWorkflow = useMemo(
+    () => routeWorkflowId ? null : loadSavedWorkflow(),
+    [routeWorkflowId],
+  )
 
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>(
     savedWorkflow?.nodes ?? initialNodes,
@@ -307,13 +311,58 @@ function WorkspacePage() {
   const [saveStatus, setSaveStatus] = useState(
     savedWorkflow?.revision ? `Saved · v${savedWorkflow.revision}` : savedWorkflow ? 'Saved locally' : 'Unsaved',
   )
-  const [workflowId, setWorkflowId] = useState<string | undefined>(savedWorkflow?.remoteId)
+  const [workflowId, setWorkflowId] = useState<string | undefined>(routeWorkflowId ?? savedWorkflow?.remoteId)
   const [workflowRevision, setWorkflowRevision] = useState(savedWorkflow?.revision ?? 0)
+  const [workflowName, setWorkflowName] = useState(savedWorkflow?.name ?? 'Untitled workflow')
+  const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(Boolean(routeWorkflowId))
+  const [workflowLoadError, setWorkflowLoadError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [runtimeStates, setRuntimeStates] = useState<Record<string, NodeRuntimeState>>({})
   const [isRunning, setIsRunning] = useState(false)
   const [runState, setRunState] = useState<'ready' | 'running' | 'success' | 'failed'>('ready')
   const [runMessage, setRunMessage] = useState('Ready to execute')
+
+  useEffect(() => {
+    if (!routeWorkflowId) {
+      setIsLoadingWorkflow(false)
+      return
+    }
+
+    let active = true
+    setIsLoadingWorkflow(true)
+    setWorkflowLoadError(null)
+
+    getWorkflowRemote(routeWorkflowId)
+      .then((workflow) => {
+        if (!active) return
+        setNodes(workflow.nodes)
+        setEdges(workflow.edges)
+        setWorkflowId(workflow.workflowId)
+        setWorkflowRevision(workflow.version)
+        setWorkflowName(workflow.name)
+        setSaveStatus(`Saved · v${workflow.version}`)
+
+        const localDocument: WorkflowDocument = {
+          version: 1,
+          remoteId: workflow.workflowId,
+          revision: workflow.version,
+          name: workflow.name,
+          updatedAt: workflow.updatedAt,
+          nodes: workflow.nodes,
+          edges: workflow.edges,
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(localDocument, null, 2))
+      })
+      .catch((loadError) => {
+        if (!active) return
+        setWorkflowLoadError(loadError instanceof Error ? loadError.message : 'Could not load workflow.')
+      })
+      .finally(() => {
+        if (active) setIsLoadingWorkflow(false)
+      })
+
+    return () => { active = false }
+  }, [routeWorkflowId, setEdges, setNodes])
 
   const renderedNodes = useMemo(
     () => nodes.map((node) => ({
@@ -437,7 +486,7 @@ function WorkspacePage() {
     setSaveStatus('Saving...')
 
     try {
-      const result = await saveWorkflowRemote(workflowId, 'Untitled workflow', nodes, edges)
+      const result = await saveWorkflowRemote(workflowId, workflowName, nodes, edges)
       setWorkflowId(result.workflowId)
       setWorkflowRevision(result.version)
 
@@ -445,7 +494,7 @@ function WorkspacePage() {
         version: 1,
         remoteId: result.workflowId,
         revision: result.version,
-        name: 'Untitled workflow',
+        name: workflowName,
         updatedAt: result.updatedAt,
         nodes,
         edges,
@@ -564,6 +613,14 @@ function WorkspacePage() {
     }
   }
 
+  if (isLoadingWorkflow) {
+    return <div className="workspace-state"><div><span>⌁</span><strong>Loading workflow</strong><p>Fetching the latest version from PostgreSQL...</p></div></div>
+  }
+
+  if (workflowLoadError) {
+    return <div className="workspace-state"><div><span>!</span><strong>Workflow unavailable</strong><p>{workflowLoadError}</p><Link to="/dashboard">Back to dashboard</Link></div></div>
+  }
+
   return (
     <div className="workspace">
       <header className="workspace-header">
@@ -580,7 +637,7 @@ function WorkspacePage() {
           <div className="header-divider" />
 
           <div className="workflow-title">
-            <strong>Untitled workflow</strong>
+            <strong>{workflowName}</strong>
             <span>{workflowRevision > 0 ? `v${workflowRevision}` : 'Draft'}</span>
           </div>
         </div>

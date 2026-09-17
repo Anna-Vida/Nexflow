@@ -6,6 +6,7 @@ import {
   Param,
   Post,
 } from '@nestjs/common';
+import { z } from 'zod';
 import {
   executeWorkflowSchema,
   saveWorkflowSchema,
@@ -14,12 +15,35 @@ import {
   WorkflowsService,
 } from './workflows.service.js';
 
+const workflowIdSchema = z.string().uuid();
+
+function parseWorkflowId(value: string) {
+  const parsed = workflowIdSchema.safeParse(value);
+  if (!parsed.success) throw new BadRequestException('Invalid workflow ID.');
+  return parsed.data;
+}
+
 @Controller('workflows')
 export class WorkflowsController {
   constructor(
     private readonly workflowsService:
       WorkflowsService,
   ) {}
+
+  @Get()
+  list() {
+    return this.workflowsService.list();
+  }
+
+  @Get('executions/recent')
+  recentExecutions() {
+    return this.workflowsService.recentExecutions();
+  }
+
+  @Get(':workflowId')
+  getById(@Param('workflowId') workflowId: string) {
+    return this.workflowsService.getById(parseWorkflowId(workflowId));
+  }
 
   @Post('save')
   save(
@@ -73,6 +97,6 @@ export class WorkflowsController {
     workflowId: string,
   ) {
     return this.workflowsService
-      .history(workflowId);
+      .history(parseWorkflowId(workflowId));
   }
 }

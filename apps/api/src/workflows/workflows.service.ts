@@ -300,4 +300,66 @@ export class WorkflowsService {
       },
     });
   }
+
+  async list() {
+    const workflows = await this.prisma.workflow.findMany({
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        executions: {
+          orderBy: { startedAt: 'desc' },
+          take: 1,
+          select: {
+            id: true, status: true, durationMs: true,
+            startedAt: true, completedAt: true,
+          },
+        },
+        _count: { select: { executions: true } },
+      },
+    });
+
+    return workflows.map((workflow) => ({
+      id: workflow.id,
+      name: workflow.name,
+      currentVersion: workflow.currentVersion,
+      createdAt: workflow.createdAt,
+      updatedAt: workflow.updatedAt,
+      executionCount: workflow._count.executions,
+      latestExecution: workflow.executions[0] ?? null,
+    }));
+  }
+
+  async getById(workflowId: string) {
+    const workflow = await this.prisma.workflow.findUnique({
+      where: { id: workflowId },
+    });
+    if (!workflow) throw new NotFoundException('Workflow not found.');
+
+    const version = await this.prisma.workflowVersion.findUnique({
+      where: {
+        workflowId_version: { workflowId, version: workflow.currentVersion },
+      },
+    });
+    if (!version) throw new NotFoundException('Workflow version not found.');
+
+    return {
+      workflowId: workflow.id,
+      name: workflow.name,
+      version: version.version,
+      updatedAt: workflow.updatedAt,
+      nodes: version.nodes,
+      edges: version.edges,
+    };
+  }
+
+  async recentExecutions() {
+    return this.prisma.execution.findMany({
+      orderBy: { startedAt: 'desc' },
+      take: 10,
+      select: {
+        id: true, status: true, durationMs: true,
+        message: true, startedAt: true, completedAt: true,
+        workflow: { select: { id: true, name: true } },
+      },
+    });
+  }
 }

@@ -121,3 +121,64 @@ export async function executeWorkflowRemote(
 
   return data
 }
+
+export type DashboardExecution = {
+  id: string
+  status: string
+  durationMs: number | null
+  message?: string | null
+  startedAt: string
+  completedAt: string | null
+  workflow: { id: string; name: string } | null
+}
+
+export type DashboardWorkflow = {
+  id: string
+  name: string
+  currentVersion: number
+  createdAt: string
+  updatedAt: string
+  executionCount: number
+  latestExecution: {
+    id: string
+    status: string
+    durationMs: number | null
+    startedAt: string
+    completedAt: string | null
+  } | null
+}
+
+export type RemoteWorkflow = {
+  workflowId: string
+  name: string
+  version: number
+  updatedAt: string
+  nodes: WorkflowNode[]
+  edges: Edge[]
+}
+
+async function getRemote<T>(url: string): Promise<T> {
+  let response: Response
+  try {
+    response = await fetch(url)
+  } catch {
+    throw new Error('NexFlow API is unavailable.')
+  }
+  const data = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(typeof data?.message === 'string' ? data.message : 'NexFlow API returned an error.')
+  }
+  return data as T
+}
+
+export function listWorkflowsRemote() {
+  return getRemote<DashboardWorkflow[]>('/api/workflows')
+}
+
+export function getRecentExecutionsRemote() {
+  return getRemote<DashboardExecution[]>('/api/workflows/executions/recent')
+}
+
+export function getWorkflowRemote(workflowId: string) {
+  return getRemote<RemoteWorkflow>(`/api/workflows/${workflowId}`)
+}

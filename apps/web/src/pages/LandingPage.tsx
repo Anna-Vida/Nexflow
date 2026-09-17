@@ -72,7 +72,7 @@ function LandingPage() {
           </a>
         </div>
 
-        <Link className="nav-button nav-button-link" to="/workspace">
+        <Link className="nav-button nav-button-link" to="/dashboard">
   Open workspace
 </Link>
       </nav>
