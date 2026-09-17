@@ -14,6 +14,7 @@ import type {
 } from './workflow.schemas.js';
 import {
   executeWorkflow,
+  type WorkflowExecutionOptions,
 } from './workflow.engine.js';
 import {
   ExecutionsGateway,
@@ -73,6 +74,8 @@ export class WorkflowsService {
           return {
             workflowId:
               workflow.id,
+            webhookToken:
+              workflow.webhookToken,
 
             version: 1,
 
@@ -135,6 +138,8 @@ export class WorkflowsService {
         return {
           workflowId:
             workflow.id,
+          webhookToken:
+            workflow.webhookToken,
 
           version:
             workflow.currentVersion,
@@ -149,6 +154,7 @@ export class WorkflowsService {
 
   async execute(
     request: ExecuteWorkflowDto,
+    options?: WorkflowExecutionOptions,
   ) {
     if (request.workflowId) {
       const workflow =
@@ -210,6 +216,7 @@ export class WorkflowsService {
               event,
             );
         },
+        options,
       );
 
     await this.prisma.$transaction([
@@ -343,6 +350,7 @@ export class WorkflowsService {
 
     return {
       workflowId: workflow.id,
+      webhookToken: workflow.webhookToken,
       name: workflow.name,
       version: version.version,
       updatedAt: workflow.updatedAt,

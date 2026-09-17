@@ -15,7 +15,10 @@ const webhookDataSchema = z
     kind: z.literal('webhook'),
     config: z.object({
       method: z.enum(['GET', 'POST']),
-      path: z.string(),
+      path: z.string().min(1).max(160).regex(
+        /^\/[A-Za-z0-9/_-]*$/,
+        'Webhook path contains unsupported characters.',
+      ),
     }),
   })
   .passthrough();

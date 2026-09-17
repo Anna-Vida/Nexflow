@@ -10,11 +10,15 @@ import type {
 
 type Props = {
   node: WorkflowNode | null
+  webhookToken?: string
   onChange: (nodeId: string, data: WorkflowNodeData) => void
   onClose: () => void
 }
 
-function NodeConfigPanel({ node, onChange, onClose }: Props) {
+const PUBLIC_API_URL = (import.meta.env.VITE_PUBLIC_API_URL as string | undefined)
+  ?.replace(/\/$/, '') ?? 'http://127.0.0.1:3000'
+
+function NodeConfigPanel({ node, webhookToken, onChange, onClose }: Props) {
   if (!node) {
     return (
       <aside className="config-panel config-panel-empty">
@@ -31,6 +35,10 @@ function NodeConfigPanel({ node, onChange, onClose }: Props) {
 
   const renderFields = () => {
     if (data.kind === 'webhook') {
+      const endpoint = webhookToken
+        ? `${PUBLIC_API_URL}/api/hooks/${webhookToken}${data.config.path}`
+        : null
+
       const update = (patch: Partial<WebhookConfig>) => {
         const config = {
           ...data.config,
@@ -74,9 +82,22 @@ function NodeConfigPanel({ node, onChange, onClose }: Props) {
             />
           </label>
 
-          <div className="config-info">
-            NexFlow will eventually expose this path through the backend API.
-          </div>
+          {endpoint ? (
+            <div className="config-info webhook-endpoint">
+              <strong>Live webhook</strong>
+              <code>{endpoint}</code>
+              <button type="button" onClick={() => {
+                void navigator.clipboard?.writeText(endpoint)
+              }}>
+                Copy endpoint
+              </button>
+              <small>Save after changing the method or path before testing.</small>
+            </div>
+          ) : (
+            <div className="config-info">
+              Save this workflow once to generate its webhook endpoint.
+            </div>
+          )}
         </>
       )
     }

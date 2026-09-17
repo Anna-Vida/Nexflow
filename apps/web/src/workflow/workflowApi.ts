@@ -36,6 +36,7 @@ export type RemoteExecutionResult = {
 
 export type SaveWorkflowResult = {
   workflowId: string
+  webhookToken: string
   version: number
   updatedAt: string
 }
@@ -150,6 +151,7 @@ export type DashboardWorkflow = {
 
 export type RemoteWorkflow = {
   workflowId: string
+  webhookToken: string
   name: string
   version: number
   updatedAt: string

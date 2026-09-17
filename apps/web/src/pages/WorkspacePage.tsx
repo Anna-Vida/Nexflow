@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import {
   addEdge,
   Background,
@@ -335,6 +335,7 @@ function validateNode(data: WorkflowNodeData) {
 
 function WorkspacePage() {
   const { workflowId: routeWorkflowId } = useParams()
+  const navigate = useNavigate()
   useEffect(() => {
     executionSocket.connect()
     return () => {
@@ -360,6 +361,7 @@ function WorkspacePage() {
     savedWorkflow?.revision ? `Saved · v${savedWorkflow.revision}` : savedWorkflow ? 'Saved locally' : 'Unsaved',
   )
   const [workflowId, setWorkflowId] = useState<string | undefined>(routeWorkflowId ?? savedWorkflow?.remoteId)
+  const [webhookToken, setWebhookToken] = useState<string | undefined>()
   const [workflowRevision, setWorkflowRevision] = useState(savedWorkflow?.revision ?? 0)
   const [workflowName, setWorkflowName] = useState(savedWorkflow?.name ?? 'Untitled workflow')
   const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(Boolean(routeWorkflowId))
@@ -406,6 +408,7 @@ function WorkspacePage() {
         setNodes(workflow.nodes)
         setEdges(workflow.edges)
         setWorkflowId(workflow.workflowId)
+        setWebhookToken(workflow.webhookToken)
         setWorkflowRevision(workflow.version)
         setWorkflowName(workflow.name)
         setSaveStatus(`Saved · v${workflow.version}`)
@@ -554,6 +557,7 @@ function WorkspacePage() {
     try {
       const result = await saveWorkflowRemote(workflowId, cleanName, nodes, edges)
       setWorkflowId(result.workflowId)
+      setWebhookToken(result.webhookToken)
       setTestInputScope(result.workflowId)
       setWorkflowRevision(result.version)
       setWorkflowName(cleanName)
@@ -570,6 +574,9 @@ function WorkspacePage() {
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(workflow, null, 2))
       setSaveStatus(`Saved · v${result.version}`)
+      if (!routeWorkflowId) {
+        navigate(`/workspace/${result.workflowId}`, { replace: true })
+      }
     } catch (error) {
       setSaveStatus(error instanceof Error ? error.message : 'Save failed')
     } finally {
@@ -923,6 +930,7 @@ function WorkspacePage() {
 
         <NodeConfigPanel
           node={selectedNode}
+          webhookToken={webhookToken}
           onChange={updateNodeData}
           onClose={() => setSelectedNodeId(null)}
         />

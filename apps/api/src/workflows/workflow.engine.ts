@@ -30,6 +30,10 @@ export type WorkflowExecutionResult = {
   durationMs: number;
 };
 
+export type WorkflowExecutionOptions = {
+  startNodeId?: string;
+};
+
 type NodeExecutionResult = {
   context: WorkflowContext;
   branch?: 'true' | 'false';
@@ -276,6 +280,7 @@ async function executeNode(
 export async function executeWorkflow(
   request: ExecuteWorkflowDto,
   onEvent?: ExecutionEventHandler,
+  options: WorkflowExecutionOptions = {},
 ): Promise<WorkflowExecutionResult> {
   const startedAt = Date.now();
 
@@ -342,6 +347,41 @@ export async function executeWorkflow(
     outgoing.get(edge.source)?.push(edge);
   }
 
+  const activeNodeIds = new Set<string>();
+
+  if (options.startNodeId) {
+    const startNode = nodeById.get(options.startNodeId);
+    if (!startNode) {
+      return {
+        success: false,
+        message: 'Workflow start node does not exist.',
+        context,
+        events,
+        durationMs: Date.now() - startedAt,
+      };
+    }
+
+    if ((incoming.get(startNode.id) ?? []).length > 0) {
+      return {
+        success: false,
+        message: 'Webhook trigger must be a root node.',
+        context,
+        events,
+        durationMs: Date.now() - startedAt,
+      };
+    }
+
+    const pending = [startNode.id];
+    while (pending.length > 0) {
+      const currentId = pending.pop();
+      if (!currentId || activeNodeIds.has(currentId)) continue;
+      activeNodeIds.add(currentId);
+      for (const edge of outgoing.get(currentId) ?? []) pending.push(edge.target);
+    }
+  } else {
+    for (const node of nodes) activeNodeIds.add(node.id);
+  }
+
   const edgeActivation =
     new Map<string, boolean>();
 
@@ -356,6 +396,7 @@ export async function executeWorkflow(
   const enqueueIfReady = (
     nodeId: string,
   ) => {
+    if (!activeNodeIds.has(nodeId)) return;
     if (
       processed.has(nodeId) ||
       queued.has(nodeId)
@@ -363,8 +404,8 @@ export async function executeWorkflow(
       return;
     }
 
-    const incomingEdges =
-      incoming.get(nodeId) ?? [];
+    const incomingEdges = (incoming.get(nodeId) ?? [])
+      .filter((edge) => activeNodeIds.has(edge.source));
 
     const ready = incomingEdges.every((edge) =>
       edgeActivation.has(edge.id),
@@ -378,12 +419,13 @@ export async function executeWorkflow(
     queued.add(nodeId);
   };
 
-  for (const node of nodes) {
-    if (
-      (incoming.get(node.id) ?? [])
-        .length === 0
-    ) {
-      enqueueIfReady(node.id);
+  if (options.startNodeId) {
+    enqueueIfReady(options.startNodeId);
+  } else {
+    for (const node of nodes) {
+      if ((incoming.get(node.id) ?? []).length === 0) {
+        enqueueIfReady(node.id);
+      }
     }
   }
 
@@ -403,8 +445,8 @@ export async function executeWorkflow(
       continue;
     }
 
-    const incomingEdges =
-      incoming.get(nodeId) ?? [];
+    const incomingEdges = (incoming.get(nodeId) ?? [])
+      .filter((edge) => activeNodeIds.has(edge.source));
 
     const shouldRun =
       incomingEdges.length === 0 ||
@@ -510,6 +552,7 @@ export async function executeWorkflow(
 
       for (const remaining of nodes) {
         if (
+          activeNodeIds.has(remaining.id) &&
           !processed.has(
             remaining.id,
           )

@@ -610,6 +610,33 @@
   box-shadow: none;
 }
 
+.webhook-endpoint {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.webhook-endpoint strong {
+  color: #aaa0e4;
+}
+
+.webhook-endpoint code {
+  overflow-wrap: anywhere;
+  color: #c3b6ff;
+  user-select: all;
+}
+
+.webhook-endpoint button {
+  align-self: flex-start;
+  padding: 6px 9px;
+  border: 1px solid #4b3b83;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #d4c9ff;
+  background: #211a36;
+  font: inherit;
+}
+
 @media (max-width: 760px) {
 .config-panel {
   position: absolute;
