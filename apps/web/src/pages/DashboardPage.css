@@ -302,6 +302,18 @@
   border: 1px solid #584628;
 }
 
+.status-badge.recovering {
+  color: #e1ba74;
+  background: #292216;
+  border: 1px solid #584628;
+}
+
+.status-badge.recovery_required {
+  color: #df7882;
+  background: #271619;
+  border: 1px solid #4d292e;
+}
+
 .status-badge.running {
   color: #aa98f4;
   background: #1c1929;

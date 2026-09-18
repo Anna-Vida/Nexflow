@@ -37,6 +37,21 @@ export class WorkflowQueueService implements OnModuleDestroy {
     }
   }
 
+  async enqueueRecovery(executionId: string, recoveryCount: number) {
+    const jobId = `recovery-${executionId}-${recoveryCount}`;
+    const existing = await this.queue.getJob(jobId);
+    if (existing && await existing.getState() === 'failed') {
+      await existing.remove();
+    }
+    return this.queue.add('recover-workflow', {
+      executionId, mode: 'recovery', recoveryCount,
+    }, {
+      // BullMQ reserves ':' in custom IDs.
+      jobId,
+      attempts: 1,
+    });
+  }
+
   async onModuleDestroy() {
     await this.queue.close();
   }

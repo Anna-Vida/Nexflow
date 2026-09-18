@@ -255,6 +255,39 @@ export class WorkflowsService {
       },
     });
     if (claimed.count !== 1) throw new Error(`Execution ${executionId} cannot claim attempt ${attempt}.`);
+    return this.runClaimedExecution(execution, attempt, maxAttempts, workerLeaseId);
+  }
+
+  async processRecoveredExecution(executionId: string, recoveryCount: number) {
+    if (!Number.isInteger(recoveryCount) || recoveryCount < 1) {
+      throw new Error('Invalid recovery count.');
+    }
+    const execution = await this.prisma.execution.findUnique({ where: { id: executionId } });
+    if (!execution) throw new Error(`Execution ${executionId} does not exist.`);
+    const workerLeaseId = randomUUID();
+    const attempt = execution.attemptCount + 1;
+    const claimed = await this.prisma.execution.updateMany({
+      where: {
+        id: executionId, status: 'RECOVERING', recoveryCount,
+        attemptCount: execution.attemptCount, workerLeaseId: null,
+      },
+      data: {
+        status: 'RUNNING', attemptCount: attempt, maxAttempts: attempt,
+        workerLeaseId, workerHeartbeatAt: new Date(),
+        lastError: null, completedAt: null,
+      },
+    });
+    if (claimed.count !== 1) throw new Error(`Execution ${executionId} cannot claim recovery ${recoveryCount}.`);
+    return this.runClaimedExecution(execution, attempt, attempt, workerLeaseId);
+  }
+
+  private async runClaimedExecution(
+    execution: Prisma.ExecutionGetPayload<{}>,
+    attempt: number,
+    maxAttempts: number,
+    workerLeaseId: string,
+  ) {
+    const executionId = execution.id;
     const heartbeat = setInterval(() => {
       void this.prisma.execution.updateMany({
         where: { id: executionId, status: 'RUNNING', workerLeaseId },

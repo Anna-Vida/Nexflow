@@ -13,6 +13,7 @@ import {
 import { WebhooksController } from './webhooks.controller.js';
 import { WebhooksService } from './webhooks.service.js';
 import { IdempotentHttpService } from './idempotent-http.service.js';
+import { ExecutionRecoveryService } from '../recovery/execution-recovery.service.js';
 
 import { QueueModule } from '../queue/queue.module.js';
 
@@ -29,6 +30,7 @@ import { QueueModule } from '../queue/queue.module.js';
     ExecutionsGateway,
     WebhooksService,
     IdempotentHttpService,
+    ExecutionRecoveryService,
   ],
 })
 export class WorkflowsModule {}

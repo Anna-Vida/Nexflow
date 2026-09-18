@@ -66,9 +66,10 @@ moves through QUEUED → RUNNING → RETRYING → FAILED. `POST
 /api/workflows/executions/:id/retry` creates a fresh QUEUED execution linked
 through `retriedFromId` (only FAILED executions, 409 otherwise); the dashboard
 shows attempts, groups events per attempt, and offers Retry for failed runs.
-Stalled-job recovery stays disabled (`maxStalledCount: 0`) until crash
-reconciliation is tested. A hard-killed worker can leave a PostgreSQL execution
-in RUNNING; crash reconciliation is not implemented yet.
+BullMQ stalled-job replay stays disabled (`maxStalledCount: 0`). The worker
+reconciler scans leased RUNNING executions whose heartbeat is over 30 seconds
+old. It enqueues a one-attempt recovery job when HTTP actions are PENDING or
+SUCCEEDED and marks uncertain outcomes RECOVERY_REQUIRED without resending.
 Enqueue timeouts return 503 but cannot cancel a Redis command already in flight;
 a job already claimed by the worker may still finish. Automatic retries reuse
 durably saved HTTP results for the same execution and node. An HTTP request whose
@@ -88,6 +89,8 @@ unavailable. It uses a local HTTP server and cleans up its execution rows.
 Run `npm run test:webhooks` with PostgreSQL and Redis available. It launches its
 own worker and uses Redis database 15 by default. Set `TEST_REDIS_URL` to override
 this with a dedicated test database; do not run another worker against it.
+Run `npm run test:recovery` for the real worker kill/restart contract. It uses
+the same dedicated Redis test database and a local HTTP server.
 
 ## Compile and run the project
 

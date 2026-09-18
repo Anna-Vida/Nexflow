@@ -4,6 +4,8 @@ export const WORKFLOW_MAX_ATTEMPTS = 3;
 
 export type WorkflowJobData = {
   executionId: string;
+  mode?: 'normal' | 'recovery';
+  recoveryCount?: number;
 };
 
 export function redisConnection(worker = false) {

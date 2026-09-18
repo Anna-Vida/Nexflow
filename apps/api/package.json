@@ -24,6 +24,7 @@
     "test": "vitest run",
     "test:integration": "vitest run --config ./vitest.config.integration.ts",
     "test:webhooks": "npm run build && node --test test/webhooks.contract.mjs",
+    "test:recovery": "npm run build && node --test test/recovery.contract.mjs",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",

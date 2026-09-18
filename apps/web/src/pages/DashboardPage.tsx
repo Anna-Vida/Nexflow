@@ -105,7 +105,7 @@ function DashboardPage() {
   const selectedId = selectedExecution?.id
   const selectedStatus = selectedExecution?.status
   useEffect(() => {
-    if (!selectedId || !['QUEUED', 'RUNNING', 'RETRYING'].includes(selectedStatus ?? '')) return
+    if (!selectedId || !['QUEUED', 'RUNNING', 'RETRYING', 'RECOVERING'].includes(selectedStatus ?? '')) return
     let active = true
     const timer = setInterval(() => {
       void getExecutionRemote(selectedId).then((detail) => {

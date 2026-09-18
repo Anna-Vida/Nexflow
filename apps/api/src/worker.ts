@@ -3,14 +3,17 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { createWorkflowWorker } from './queue/workflow-worker.js';
 import { WorkflowsService } from './workflows/workflows.service.js';
+import { ExecutionRecoveryService } from './recovery/execution-recovery.service.js';
 
 const app = await NestFactory.createApplicationContext(AppModule);
 const worker = createWorkflowWorker(app.get(WorkflowsService));
+const recovery = app.get(ExecutionRecoveryService);
 let shuttingDown = false;
 
 async function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
+  recovery.stop();
   await worker.close();
   await app.close();
   process.disconnect?.();
@@ -23,5 +26,7 @@ process.once('message', (message) => {
   if (message === 'shutdown') void shutdown();
 });
 await worker.waitUntilReady();
+await recovery.scanOnce();
+recovery.start();
 console.log('NexFlow BullMQ worker ready.');
 process.send?.('ready');
