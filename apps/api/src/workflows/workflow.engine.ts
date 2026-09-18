@@ -228,6 +228,10 @@ async function executeNode(
     };
   }
 
+  if (data.kind === 'schedule') {
+    return { context, message: 'Scheduled trigger fired.' };
+  }
+
   if (data.kind === 'condition') {
     await sleep(150);
 
@@ -369,7 +373,9 @@ export async function executeWorkflow(
     if ((incoming.get(startNode.id) ?? []).length > 0) {
       return {
         success: false,
-        message: 'Webhook trigger must be a root node.',
+        message: startNode.data.kind === 'webhook'
+          ? 'Webhook trigger must be a root node.'
+          : 'Schedule trigger must be a root node.',
         context,
         events,
         durationMs: Date.now() - startedAt,

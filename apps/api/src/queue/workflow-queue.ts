@@ -2,11 +2,10 @@ export const WORKFLOW_QUEUE = 'nexflow-workflow-executions';
 
 export const WORKFLOW_MAX_ATTEMPTS = 3;
 
-export type WorkflowJobData = {
-  executionId: string;
-  mode?: 'normal' | 'recovery';
-  recoveryCount?: number;
-};
+export type WorkflowJobData =
+  | { executionId: string; mode?: 'normal' }
+  | { executionId: string; mode: 'recovery'; recoveryCount: number }
+  | { mode: 'schedule'; scheduleId: string; generation: number };
 
 export function redisConnection(worker = false) {
   const url = new URL(process.env.REDIS_URL ?? 'redis://127.0.0.1:6379');

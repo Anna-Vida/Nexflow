@@ -92,6 +92,24 @@ this with a dedicated test database; do not run another worker against it.
 Run `npm run test:recovery` for the real worker kill/restart contract. It uses
 the same dedicated Redis test database and a local HTTP server.
 
+## Saved schedules
+
+Add a root Schedule node to a saved workflow, choose an interval or cron
+expression, and set an explicit IANA timezone. Saving creates or updates the
+schedule definition in PostgreSQL. BullMQ stores the corresponding job
+scheduler and delivers ticks; each tick creates a normal QUEUED execution from
+the workflow's current saved version. Repeated tick delivery uses one
+`ScheduledFire` row and one execution. Disabling or removing a Schedule node
+removes its BullMQ scheduler. API and worker startup restore scheduler metadata
+from PostgreSQL, and a periodic sync repairs a missed Redis update.
+Ticks missed while the scheduler is unavailable are not backfilled; future
+ticks resume when service returns. Overlapping scheduled executions are allowed.
+
+Run `npm run test:schedules` with PostgreSQL and Redis available to verify
+registration, restart restoration, delivery, history, and disablement. It
+uses Redis database 14 by default; set `TEST_REDIS_URL` to choose another
+dedicated test database.
+
 ## Compile and run the project
 
 ```bash

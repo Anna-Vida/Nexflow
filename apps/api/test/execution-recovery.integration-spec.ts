@@ -7,6 +7,7 @@ import { IdempotentHttpService } from '../src/workflows/idempotent-http.service.
 import { WorkflowsService } from '../src/workflows/workflows.service.js';
 import type { WorkflowQueueService } from '../src/queue/workflow-queue.service.js';
 import type { ExecutionsGateway } from '../src/workflows/executions.gateway.js';
+import type { ScheduleService } from '../src/schedules/schedule.service.js';
 
 describe('stale worker reconciliation with PostgreSQL', () => {
   const prisma = new PrismaService();
@@ -80,7 +81,7 @@ describe('stale worker reconciliation with PostgreSQL', () => {
 
     const http = new IdempotentHttpService(prisma);
     http.transport = vi.fn().mockRejectedValue(new Error('HTTP must not be resent'));
-    const workflows = new WorkflowsService(queue, {} as ExecutionsGateway, prisma, http);
+    const workflows = new WorkflowsService(queue, {} as ExecutionsGateway, prisma, http, {} as ScheduleService);
     const result = await workflows.processRecoveredExecution(id, 1);
     expect(result.success).toBe(true);
     expect(result.context['http-1.response']).toEqual(response);

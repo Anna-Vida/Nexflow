@@ -20,7 +20,7 @@ export class WorkflowQueueService implements OnModuleDestroy {
     this.queue.on('error', (error: Error) => this.logger.error(error.message));
   }
 
-  async enqueue(data: WorkflowJobData) {
+  async enqueue(data: { executionId: string }) {
     // This bounds the HTTP wait, not the Redis command itself. A late job can
     // only run if its execution is still QUEUED when the worker claims it.
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -37,6 +37,12 @@ export class WorkflowQueueService implements OnModuleDestroy {
     }
   }
 
+  async enqueueScheduledExecution(executionId: string) {
+    const existing = await this.queue.getJob(executionId);
+    if (existing && await existing.getState() === 'failed') await existing.remove();
+    return this.enqueue({ executionId });
+  }
+
   async enqueueRecovery(executionId: string, recoveryCount: number) {
     const jobId = `recovery-${executionId}-${recoveryCount}`;
     const existing = await this.queue.getJob(jobId);
@@ -50,6 +56,32 @@ export class WorkflowQueueService implements OnModuleDestroy {
       jobId,
       attempts: 1,
     });
+  }
+
+  async listScheduleJobs() {
+    return this.queue.getJobSchedulers(0, -1);
+  }
+
+  async removeScheduleJob(id: string) {
+    return this.queue.removeJobScheduler(id);
+  }
+
+  async upsertScheduleJob(schedule: {
+    id: string; generation: number; mode: 'interval' | 'cron';
+    cron: string | null; timezone: string; intervalMinutes: number | null;
+    startDate: Date;
+  }) {
+    return this.queue.upsertJobScheduler(
+      `nexflow-schedule-${schedule.id}-${schedule.generation}`,
+      schedule.mode === 'cron'
+        ? { pattern: schedule.cron!, tz: schedule.timezone, startDate: schedule.startDate }
+        : { every: schedule.intervalMinutes! * 60_000, startDate: schedule.startDate },
+      {
+        name: 'fire-schedule',
+        data: { mode: 'schedule', scheduleId: schedule.id, generation: schedule.generation },
+        opts: { attempts: 1, removeOnComplete: 100, removeOnFail: 500 },
+      },
+    );
   }
 
   async onModuleDestroy() {

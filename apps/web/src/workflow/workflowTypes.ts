@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@xyflow/react'
 
-export type NodeKind = 'webhook' | 'condition' | 'http' | 'delay'
+export type NodeKind = 'webhook' | 'schedule' | 'condition' | 'http' | 'delay'
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -23,6 +23,14 @@ export type HttpConfig = {
   timeout: number
   retries?: number
   retryDelayMs?: number
+}
+
+export type ScheduleConfig = {
+  mode: 'interval' | 'cron'
+  cron?: string
+  timezone: string
+  intervalMinutes?: number
+  enabled: boolean
 }
 
 export type DelayConfig = {
@@ -54,6 +62,10 @@ type CommonNodeData = {
 } & Record<string, unknown>
 
 export type WorkflowNodeData =
+  | (CommonNodeData & {
+      kind: 'schedule'
+      config: ScheduleConfig
+    })
   | (CommonNodeData & {
       kind: 'webhook'
       config: WebhookConfig

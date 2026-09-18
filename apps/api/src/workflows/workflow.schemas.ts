@@ -23,6 +23,24 @@ const webhookDataSchema = z
   })
   .passthrough();
 
+const timezoneSchema = z.string().min(1).max(100).refine((value) => {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}, 'Invalid IANA timezone.');
+
+const scheduleDataSchema = z.object({
+  ...commonShape,
+  kind: z.literal('schedule'),
+  config: z.discriminatedUnion('mode', [
+    z.object({ mode: z.literal('interval'), intervalMinutes: z.number().int().min(1).max(525_600), timezone: timezoneSchema, enabled: z.boolean().default(true) }),
+    z.object({ mode: z.literal('cron'), cron: z.string().trim().min(1).max(120), timezone: timezoneSchema, enabled: z.boolean().default(true) }),
+  ]),
+}).passthrough();
+
 const conditionDataSchema = z
   .object({
     ...commonShape,
@@ -88,6 +106,7 @@ export const workflowNodeSchema = z
 
     data: z.discriminatedUnion('kind', [
       webhookDataSchema,
+      scheduleDataSchema,
       conditionDataSchema,
       httpDataSchema,
       delayDataSchema,

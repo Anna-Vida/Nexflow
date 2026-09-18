@@ -170,6 +170,11 @@ const initialEdges: Edge[] = [
 ]
 
 const nodeTemplates: Record<NodeKind, WorkflowNodeData> = {
+  schedule: {
+    kind: 'schedule', title: 'Schedule', subtitle: 'Every 60 min (Asia/Manila)',
+    category: 'TRIGGER', icon: '◷', hasInput: false,
+    config: { mode: 'interval', intervalMinutes: 60, cron: '0 9 * * 1-5', timezone: 'Asia/Manila', enabled: true },
+  },
   webhook: {
     kind: 'webhook',
     title: 'Webhook',
@@ -286,6 +291,15 @@ function loadSavedWorkflow(): WorkflowDocument | null {
 }
 
 function validateNode(data: WorkflowNodeData) {
+  if (data.kind === 'schedule') {
+    try { new Intl.DateTimeFormat('en', { timeZone: data.config.timezone }) }
+    catch { return 'Schedule requires a valid IANA timezone.' }
+    if (data.config.mode === 'interval' && (!Number.isInteger(data.config.intervalMinutes) || (data.config.intervalMinutes ?? 0) < 1)) {
+      return 'Schedule interval must be at least one minute.'
+    }
+    if (data.config.mode === 'cron' && !data.config.cron?.trim()) return 'Cron expression is required.'
+    return null
+  }
   if (data.kind === 'webhook') {
     if (!data.config.path.startsWith('/')) {
       return 'Webhook paths must start with /.'
@@ -814,6 +828,11 @@ function WorkspacePage() {
 
           <div className="node-category">
             <span className="category-label">TRIGGERS</span>
+
+            <button onClick={() => addNode('schedule')}>
+              <span className="palette-icon purple">◷</span>
+              <div><strong>Schedule</strong><small>Run on an interval or cron</small></div>
+            </button>
 
             <button onClick={() => addNode('webhook')}>
               <span className="palette-icon purple">↗</span>

@@ -1,9 +1,14 @@
 import { UnrecoverableError, Worker } from 'bullmq';
 import type { WorkflowsService } from '../workflows/workflows.service.js';
+import type { ScheduleService } from '../schedules/schedule.service.js';
 import { redisConnection, WORKFLOW_QUEUE, type WorkflowJobData } from './workflow-queue.js';
 
-export function createWorkflowWorker(workflows: WorkflowsService) {
+export function createWorkflowWorker(workflows: WorkflowsService, schedules?: ScheduleService) {
   const worker = new Worker<WorkflowJobData>(WORKFLOW_QUEUE, async (job) => {
+    if (job.data.mode === 'schedule') {
+      if (!schedules || !job.id) throw new Error('Schedule processor is unavailable.');
+      return schedules.fire(job.data.scheduleId, job.data.generation, job.id);
+    }
     const result = job.data.mode === 'recovery'
       ? await workflows.processRecoveredExecution(job.data.executionId, job.data.recoveryCount!)
       : await workflows.processQueuedExecution(job.data.executionId, {

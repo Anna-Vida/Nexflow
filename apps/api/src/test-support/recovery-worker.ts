@@ -7,6 +7,7 @@ import { IdempotentHttpService } from '../workflows/idempotent-http.service.js';
 import { WorkflowsService } from '../workflows/workflows.service.js';
 import { ExecutionRecoveryService } from '../recovery/execution-recovery.service.js';
 import { createWorkflowWorker } from '../queue/workflow-worker.js';
+import { ScheduleService } from '../schedules/schedule.service.js';
 
 if (process.env.NODE_ENV !== 'test') throw new Error('Test worker requires NODE_ENV=test.');
 const target = new URL(process.env.NEXFLOW_TEST_HTTP_URL ?? '');
@@ -29,7 +30,7 @@ http.transport = async (_nodeId, config, _context, key) => {
   };
 };
 const recovery = app.get(ExecutionRecoveryService);
-const worker = createWorkflowWorker(app.get(WorkflowsService));
+const worker = createWorkflowWorker(app.get(WorkflowsService), app.get(ScheduleService));
 let closing = false;
 async function close() {
   if (closing) return;

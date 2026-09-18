@@ -3,6 +3,7 @@ import { ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { WorkflowQueueService } from '../queue/workflow-queue.service.js';
 import { WORKFLOW_MAX_ATTEMPTS } from '../queue/workflow-queue.js';
 import { IdempotentHttpService } from './idempotent-http.service.js';
+import { ScheduleService } from '../schedules/schedule.service.js';
 
 import {
   Injectable,
@@ -46,12 +47,13 @@ export class WorkflowsService {
     private readonly prisma:
       PrismaService,
     private readonly idempotentHttp: IdempotentHttpService,
+    private readonly schedules: ScheduleService,
   ) {}
 
   async save(
     request: SaveWorkflowDto,
   ) {
-    return this.prisma.$transaction(
+    const saved = await this.prisma.$transaction(
       async (tx) => {
         if (!request.workflowId) {
           const workflow =
@@ -80,6 +82,8 @@ export class WorkflowsService {
                 ),
             },
           });
+
+          await this.schedules.saveDefinitions(tx, workflow.id, request);
 
           return {
             workflowId:
@@ -145,6 +149,8 @@ export class WorkflowsService {
           },
         });
 
+        await this.schedules.saveDefinitions(tx, workflow.id, request);
+
         return {
           workflowId:
             workflow.id,
@@ -160,6 +166,10 @@ export class WorkflowsService {
         };
       },
     );
+    await this.schedules.syncAll().catch((error: unknown) => {
+      console.error('[schedules] save sync failed; startup/periodic sync will retry', error);
+    });
+    return saved;
   }
 
   private async ensureWorkflowExists(workflowId?: string) {

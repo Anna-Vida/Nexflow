@@ -6,6 +6,7 @@ import { IdempotentHttpService } from '../src/workflows/idempotent-http.service.
 import { WorkflowsService } from '../src/workflows/workflows.service.js';
 import type { WorkflowQueueService } from '../src/queue/workflow-queue.service.js';
 import type { ExecutionsGateway } from '../src/workflows/executions.gateway.js';
+import type { ScheduleService } from '../src/schedules/schedule.service.js';
 
 describe('execution worker lease with PostgreSQL', () => {
   const prisma = new PrismaService();
@@ -19,6 +20,7 @@ describe('execution worker lease with PostgreSQL', () => {
       {} as ExecutionsGateway,
       prisma,
       new IdempotentHttpService(prisma),
+      {} as ScheduleService,
     );
   });
 

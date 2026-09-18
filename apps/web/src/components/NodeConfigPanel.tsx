@@ -3,6 +3,7 @@ import type {
   DelayConfig,
   HttpConfig,
   HttpMethod,
+  ScheduleConfig,
   WebhookConfig,
   WorkflowNode,
   WorkflowNodeData,
@@ -100,6 +101,52 @@ function NodeConfigPanel({ node, webhookToken, onChange, onClose }: Props) {
           )}
         </>
       )
+    }
+
+    if (data.kind === 'schedule') {
+      const update = (patch: Partial<ScheduleConfig>) => {
+        const config = { ...data.config, ...patch }
+        onChange(node.id, {
+          ...data,
+          config,
+          subtitle: config.mode === 'cron'
+            ? `${config.cron || 'Cron'} (${config.timezone})`
+            : `Every ${config.intervalMinutes || 60} min (${config.timezone})`,
+        })
+      }
+
+      return <>
+        <label className="config-field">
+          <span>Enabled</span>
+          <input type="checkbox" checked={data.config.enabled} onChange={(event) => update({ enabled: event.target.checked })} />
+        </label>
+        <label className="config-field">
+          <span>Schedule type</span>
+          <select value={data.config.mode} onChange={(event) => update({
+            mode: event.target.value as ScheduleConfig['mode'],
+            cron: data.config.cron ?? '0 9 * * 1-5',
+            intervalMinutes: data.config.intervalMinutes ?? 60,
+          })}>
+            <option value="interval">Interval</option>
+            <option value="cron">Cron</option>
+          </select>
+        </label>
+        {data.config.mode === 'interval' ? <label className="config-field">
+          <span>Every (minutes)</span>
+          <input type="number" min="1" max="525600" value={data.config.intervalMinutes ?? 60}
+            onChange={(event) => update({ intervalMinutes: Number(event.target.value) })} />
+        </label> : <label className="config-field">
+          <span>Cron expression</span>
+          <input value={data.config.cron ?? '0 9 * * 1-5'} placeholder="0 9 * * 1-5"
+            onChange={(event) => update({ cron: event.target.value })} />
+        </label>}
+        <label className="config-field">
+          <span>Timezone</span>
+          <input value={data.config.timezone} placeholder="Asia/Manila"
+            onChange={(event) => update({ timezone: event.target.value })} />
+        </label>
+        <div className="config-info">Save this workflow to activate or update its schedule.</div>
+      </>
     }
 
     if (data.kind === 'condition') {
