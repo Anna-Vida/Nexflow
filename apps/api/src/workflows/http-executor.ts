@@ -60,6 +60,7 @@ const BLOCKED_HEADERS =
     'proxy-authenticate',
     'te',
     'trailer',
+    'idempotency-key',
   ]);
 
 const blockedAddresses =
@@ -828,6 +829,7 @@ export async function executeHttpRequest(
   nodeId: string,
   config: HttpConfig,
   context: WorkflowContext,
+  idempotencyKey?: string,
 ) {
   const resolvedUrl =
     interpolateTemplate(
@@ -859,6 +861,7 @@ export async function executeHttpRequest(
     parseHeaders(
       headerText,
     );
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
 
   let body:
     string | undefined;

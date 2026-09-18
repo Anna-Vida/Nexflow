@@ -10,6 +10,7 @@ const captured = vi.hoisted(() => ({
 }));
 
 vi.mock('bullmq', () => ({
+  UnrecoverableError: class extends Error {},
   Worker: class {
     constructor(_name: string, process: NonNullable<typeof captured.process>, options: Record<string, unknown>) {
       captured.process = process;
@@ -48,5 +49,17 @@ describe('workflow worker retry delivery', () => {
     await expect(captured.process!({ data: { executionId: 'execution' }, attemptsMade: 0, opts: {} }))
       .rejects.toThrow('Database unavailable');
     expect(processQueuedExecution).toHaveBeenCalledWith('execution', { attempt: 1, maxAttempts: 1 });
+  });
+
+  it('makes uncertain HTTP outcomes terminal for BullMQ', async () => {
+    const processQueuedExecution = vi.fn().mockResolvedValue({
+      success: false,
+      message: 'HTTP action has an uncertain external outcome.',
+      uncertainExternalOutcome: true,
+    });
+    createWorkflowWorker({ processQueuedExecution } as unknown as WorkflowsService);
+    await expect(captured.process!({ data: { executionId: 'execution' }, attemptsMade: 0, opts: { attempts: 3 } }))
+      .rejects.toThrow('uncertain external outcome');
+    expect(captured.options.maxStalledCount).toBe(0);
   });
 });

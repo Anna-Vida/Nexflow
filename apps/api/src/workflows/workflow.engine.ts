@@ -1,5 +1,6 @@
 import type { ExecuteWorkflowDto } from './workflow.schemas.js';
 import { executeHttpRequest } from './http-executor.js';
+import { UncertainExternalOutcomeError } from './idempotent-http.service.js';
 
 type WorkflowNode = ExecuteWorkflowDto['nodes'][number];
 type WorkflowEdge = ExecuteWorkflowDto['edges'][number];
@@ -28,10 +29,12 @@ export type WorkflowExecutionResult = {
   context: WorkflowContext;
   events: ExecutionEvent[];
   durationMs: number;
+  uncertainExternalOutcome?: boolean;
 };
 
 export type WorkflowExecutionOptions = {
   startNodeId?: string;
+  executeHttp?: (node: WorkflowNode, context: WorkflowContext) => Promise<NodeExecutionResult>;
 };
 
 type NodeExecutionResult = {
@@ -203,6 +206,7 @@ function evaluateCondition(
 async function executeNode(
   node: WorkflowNode,
   context: WorkflowContext,
+  options: WorkflowExecutionOptions,
 ): Promise<NodeExecutionResult> {
   const { data } = node;
 
@@ -266,6 +270,7 @@ async function executeNode(
     };
   }
 
+  if (options.executeHttp) return options.executeHttp(node, context);
   const httpResult = await executeHttpRequest(node.id, data.config, context);
 
   return {
@@ -492,6 +497,7 @@ export async function executeWorkflow(
         await executeNode(
           node,
           context,
+          options,
         );
 
       Object.assign(
@@ -567,6 +573,7 @@ export async function executeWorkflow(
 
       return {
         success: false,
+        uncertainExternalOutcome: error instanceof UncertainExternalOutcomeError,
         message:
           `Workflow failed: ${message}`,
         context,

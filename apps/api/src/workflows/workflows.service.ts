@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { ConflictException, ServiceUnavailableException } from '@nestjs/common';
 import { WorkflowQueueService } from '../queue/workflow-queue.service.js';
 import { WORKFLOW_MAX_ATTEMPTS } from '../queue/workflow-queue.js';
+import { IdempotentHttpService } from './idempotent-http.service.js';
 
 import {
   Injectable,
@@ -44,6 +45,7 @@ export class WorkflowsService {
 
     private readonly prisma:
       PrismaService,
+    private readonly idempotentHttp: IdempotentHttpService,
   ) {}
 
   async save(
@@ -189,12 +191,12 @@ export class WorkflowsService {
       this.prisma.execution.update({
         where: { id: executionId },
         data: {
-          status: result.success ? 'SUCCESS' : attempt < maxAttempts ? 'RETRYING' : 'FAILED',
+          status: result.uncertainExternalOutcome ? 'RECOVERY_REQUIRED' : result.success ? 'SUCCESS' : attempt < maxAttempts ? 'RETRYING' : 'FAILED',
           lastError: result.success ? null : result.message,
           context: toJson(result.context),
           message: result.message,
           durationMs: result.durationMs,
-          completedAt: result.success || attempt >= maxAttempts ? new Date() : null,
+          completedAt: result.uncertainExternalOutcome || result.success || attempt >= maxAttempts ? new Date() : null,
         },
       }),
       this.prisma.executionEvent.createMany({
@@ -253,7 +255,20 @@ export class WorkflowsService {
         edges: execution.edges,
         input: execution.input,
       });
-      const result = await executeWorkflow(parsed, undefined, { startNodeId: execution.startNodeId ?? undefined });
+      const result = await executeWorkflow(parsed, undefined, {
+        startNodeId: execution.startNodeId ?? undefined,
+        executeHttp: async (node, context) => {
+          if (node.data.kind !== 'http') throw new Error('Expected HTTP node.');
+          const http = await this.idempotentHttp.execute({
+            executionId, nodeId: node.id, workflowAttempt: attempt,
+            config: node.data.config, context,
+          });
+          return {
+            context: { ...context, [`${node.id}.response`]: http.response },
+            message: http.message,
+          };
+        },
+      });
       await this.persistExecutionResult(executionId, result, attempt, maxAttempts);
       return result;
     } catch (error) {

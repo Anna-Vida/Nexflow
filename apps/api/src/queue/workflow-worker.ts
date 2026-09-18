@@ -1,4 +1,4 @@
-import { Worker } from 'bullmq';
+import { UnrecoverableError, Worker } from 'bullmq';
 import type { WorkflowsService } from '../workflows/workflows.service.js';
 import { redisConnection, WORKFLOW_QUEUE, type WorkflowJobData } from './workflow-queue.js';
 
@@ -8,6 +8,7 @@ export function createWorkflowWorker(workflows: WorkflowsService) {
       attempt: job.attemptsMade + 1,
       maxAttempts: job.opts.attempts ?? 1,
     });
+    if (result.uncertainExternalOutcome) throw new UnrecoverableError(result.message);
     if (!result.success) throw new Error(result.message);
     return result;
   }, {

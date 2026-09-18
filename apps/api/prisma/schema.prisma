@@ -62,6 +62,7 @@ model Execution {
   workflow    Workflow?        @relation(fields: [workflowId], references: [id], onDelete: SetNull)
 
   events      ExecutionEvent[]
+  httpActions HttpAction[]
 
   startedAt   DateTime         @default(now())
   completedAt DateTime?
@@ -82,4 +83,43 @@ model ExecutionEvent {
   execution   Execution   @relation(fields: [executionId], references: [id], onDelete: Cascade)
 
   @@index([executionId, timestamp])
+}
+
+// One logical HTTP action per node and execution. The key is stable across
+// BullMQ deliveries; the remote service must honor it for automatic replay.
+model HttpAction {
+  id                 String              @id @default(uuid()) @db.Uuid
+  executionId        String              @db.Uuid
+  nodeId             String
+  idempotencyKey     String              @unique
+  requestFingerprint String
+  status             String              @default("PENDING")
+  response           Json?
+  message            String?
+  lastError          String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  completedAt        DateTime?
+
+  execution          Execution           @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  attempts           HttpActionAttempt[]
+
+  @@unique([executionId, nodeId])
+  @@index([status, updatedAt])
+}
+
+// A durable record of each outbound send. SENT is deliberately ambiguous
+// after a crash: the remote call may have completed before the result was saved.
+model HttpActionAttempt {
+  id           String     @id @default(uuid()) @db.Uuid
+  actionId     String     @db.Uuid
+  number       Int
+  status       String     @default("PREPARED")
+  startedAt    DateTime   @default(now())
+  completedAt  DateTime?
+  error        String?
+
+  action       HttpAction @relation(fields: [actionId], references: [id], onDelete: Cascade)
+
+  @@unique([actionId, number])
 }
