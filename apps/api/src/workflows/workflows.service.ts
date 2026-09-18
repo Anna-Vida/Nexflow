@@ -186,10 +186,10 @@ export class WorkflowsService {
     });
   }
 
-  private async persistExecutionResult(executionId: string, result: WorkflowExecutionResult, attempt = 1, maxAttempts = 1) {
-    await this.prisma.$transaction([
-      this.prisma.execution.update({
-        where: { id: executionId },
+  private async persistExecutionResult(executionId: string, result: WorkflowExecutionResult, attempt = 1, maxAttempts = 1, workerLeaseId?: string) {
+    await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.execution.updateMany({
+        where: { id: executionId, status: 'RUNNING', ...(workerLeaseId ? { workerLeaseId } : {}) },
         data: {
           status: result.uncertainExternalOutcome ? 'RECOVERY_REQUIRED' : result.success ? 'SUCCESS' : attempt < maxAttempts ? 'RETRYING' : 'FAILED',
           lastError: result.success ? null : result.message,
@@ -197,9 +197,12 @@ export class WorkflowsService {
           message: result.message,
           durationMs: result.durationMs,
           completedAt: result.uncertainExternalOutcome || result.success || attempt >= maxAttempts ? new Date() : null,
+          workerLeaseId: null,
+          workerHeartbeatAt: null,
         },
-      }),
-      this.prisma.executionEvent.createMany({
+      });
+      if (updated.count !== 1) throw new Error(`Execution ${executionId} lost its worker lease.`);
+      await tx.executionEvent.createMany({
         data: result.events.map((event) => ({
           executionId,
           attempt,
@@ -208,8 +211,8 @@ export class WorkflowsService {
           message: event.message,
           timestamp: new Date(event.timestamp),
         })),
-      }),
-    ]);
+      });
+    });
   }
 
   async execute(request: ExecuteWorkflowDto, options?: WorkflowExecutionOptions) {
@@ -241,12 +244,26 @@ export class WorkflowsService {
     if (!Number.isInteger(attempt) || attempt < 1 || attempt > maxAttempts || maxAttempts !== execution.maxAttempts) {
       throw new Error('Invalid execution attempt.');
     }
+    const workerLeaseId = randomUUID();
     // Only the next delivery may claim this execution; stalled recovery stays off.
     const claimed = await this.prisma.execution.updateMany({
       where: { id: executionId, status: attempt === 1 ? 'QUEUED' : 'RETRYING', attemptCount: attempt - 1 },
-      data: { status: 'RUNNING', attemptCount: attempt, maxAttempts, lastError: null, completedAt: null },
+      data: {
+        status: 'RUNNING', attemptCount: attempt, maxAttempts,
+        lastError: null, completedAt: null,
+        workerLeaseId, workerHeartbeatAt: new Date(),
+      },
     });
     if (claimed.count !== 1) throw new Error(`Execution ${executionId} cannot claim attempt ${attempt}.`);
+    const heartbeat = setInterval(() => {
+      void this.prisma.execution.updateMany({
+        where: { id: executionId, status: 'RUNNING', workerLeaseId },
+        data: { workerHeartbeatAt: new Date() },
+      }).catch((error: unknown) => {
+        console.error(`[worker] heartbeat failed for ${executionId}`, error);
+      });
+    }, 5000);
+    heartbeat.unref();
     try {
       const parsed = executeWorkflowSchema.parse({
         executionId: execution.id,
@@ -269,19 +286,22 @@ export class WorkflowsService {
           };
         },
       });
-      await this.persistExecutionResult(executionId, result, attempt, maxAttempts);
+      await this.persistExecutionResult(executionId, result, attempt, maxAttempts, workerLeaseId);
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Worker execution failed.';
       await this.prisma.execution.updateMany({
-        where: { id: executionId, status: 'RUNNING', attemptCount: attempt },
+        where: { id: executionId, status: 'RUNNING', attemptCount: attempt, workerLeaseId },
         data: {
           status: attempt < maxAttempts ? 'RETRYING' : 'FAILED',
           message, lastError: message,
           completedAt: attempt < maxAttempts ? null : new Date(),
+          workerLeaseId: null, workerHeartbeatAt: null,
         },
       });
       throw error;
+    } finally {
+      clearInterval(heartbeat);
     }
   }
 

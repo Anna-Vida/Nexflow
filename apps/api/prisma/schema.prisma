@@ -51,6 +51,9 @@ model Execution {
   attemptCount Int @default(0)
   maxAttempts  Int @default(1)
   lastError    String?
+  workerLeaseId String?
+  workerHeartbeatAt DateTime?
+  recoveryCount Int @default(0)
 
   retriedFromId String? @db.Uuid
   retriedFrom Execution? @relation("ExecutionRetries", fields: [retriedFromId], references: [id], onDelete: SetNull)
@@ -68,6 +71,7 @@ model Execution {
   completedAt DateTime?
 
   @@index([workflowId, startedAt])
+  @@index([status, workerHeartbeatAt])
 }
 
 model ExecutionEvent {
