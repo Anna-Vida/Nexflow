@@ -15,6 +15,7 @@ import {
   type DashboardExecution,
   type DashboardWorkflow,
 } from '../workflow/workflowApi'
+import { logOutRemote } from '../workflow/authApi'
 import './DashboardPage.css'
 
 const STORAGE_KEY =
@@ -184,6 +185,11 @@ function DashboardPage() {
     }
   }, [])
 
+  async function signOut() {
+    await logOutRemote()
+    navigate('/login', { replace: true })
+  }
+
   const createWorkflow = () => {
     localStorage.removeItem(
       STORAGE_KEY,
@@ -219,6 +225,14 @@ function DashboardPage() {
         >
           + New workflow
         </button>
+
+        <button
+          className="dashboard-signout"
+          onClick={signOut}
+        >
+          Sign out
+        </button>
+
       </header>
 
       <main className="dashboard-main">

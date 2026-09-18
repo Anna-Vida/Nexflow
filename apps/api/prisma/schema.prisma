@@ -7,8 +7,36 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  passwordHash String
+  name         String?
+
+  workflows    Workflow[]
+  sessions     Session[]
+  executions   Execution[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model Workflow {
   id             String            @id @default(uuid()) @db.Uuid
+  ownerId        String            @db.Uuid
+  owner          User              @relation(fields: [ownerId], references: [id])
   name           String            @default("Untitled workflow")
   currentVersion Int               @default(0)
   webhookToken   String            @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -19,6 +47,8 @@ model Workflow {
 
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
+
+  @@index([ownerId, updatedAt])
 }
 
 model WorkflowVersion {
@@ -39,6 +69,8 @@ model WorkflowVersion {
 
 model Execution {
   id          String           @id @db.Uuid
+  ownerId     String           @db.Uuid
+  owner       User             @relation(fields: [ownerId], references: [id])
   workflowId  String?          @db.Uuid
 
   status      String           @default("RUNNING")
@@ -73,6 +105,7 @@ model Execution {
   completedAt DateTime?
 
   @@index([workflowId, startedAt])
+  @@index([ownerId, startedAt])
   @@index([status, workerHeartbeatAt])
 }
 

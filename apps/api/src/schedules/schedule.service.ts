@@ -147,7 +147,8 @@ export class ScheduleService implements OnApplicationBootstrap, OnModuleDestroy 
           const executionId = randomUUID();
           await tx.execution.create({
             data: {
-              id: executionId, workflowId: schedule.workflowId, status: 'QUEUED',
+              id: executionId, ownerId: schedule.workflow.ownerId,
+              workflowId: schedule.workflowId, status: 'QUEUED',
               nodes: JSON.parse(JSON.stringify(graph.nodes)), edges: JSON.parse(JSON.stringify(graph.edges)),
               input: { _schedule: { firedAt: new Date().toISOString(), scheduleId } },
               startNodeId: node.id, attemptCount: 0, maxAttempts: WORKFLOW_MAX_ATTEMPTS,

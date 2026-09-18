@@ -8,13 +8,17 @@ import type { WorkflowQueueService } from '../src/queue/workflow-queue.service.j
 import type { ExecutionsGateway } from '../src/workflows/executions.gateway.js';
 import type { ScheduleService } from '../src/schedules/schedule.service.js';
 
+import { createTestOwner, removeTestOwner } from '../src/test-support/test-owner.js';
+
 describe('execution worker lease with PostgreSQL', () => {
   const prisma = new PrismaService();
   const ids: string[] = [];
   let workflows: WorkflowsService;
+  let ownerId: string;
 
   beforeAll(async () => {
     await prisma.$connect();
+    ownerId = (await createTestOwner(prisma, 'lease')).id;
     workflows = new WorkflowsService(
       {} as WorkflowQueueService,
       {} as ExecutionsGateway,
@@ -26,6 +30,7 @@ describe('execution worker lease with PostgreSQL', () => {
 
   afterAll(async () => {
     if (ids.length) await prisma.execution.deleteMany({ where: { id: { in: ids } } });
+    await removeTestOwner(prisma, ownerId);
     await prisma.$disconnect();
   });
 
@@ -34,7 +39,7 @@ describe('execution worker lease with PostgreSQL', () => {
     ids.push(id);
     await prisma.execution.create({
       data: {
-        id, status: 'QUEUED', nodes: nodes as object[], edges: edges as object[],
+        id, ownerId, status: 'QUEUED', nodes: nodes as object[], edges: edges as object[],
         input: {}, attemptCount: 0, maxAttempts,
       },
     });

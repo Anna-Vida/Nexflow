@@ -738,3 +738,10 @@
 .execution-drawer-state.error {
   color: #d2767e;
 }
+.dashboard-signout {
+  margin-left: 10px;
+  border-color: #2f3037;
+  color: #c9cad1;
+  background: transparent;
+}
+

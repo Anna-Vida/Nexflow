@@ -657,3 +657,10 @@ footer p {
   align-items: center;
   text-decoration: none;
 }
+
+.nav-button-secondary {
+  border-color: #2c2d34;
+  color: #c9cad1;
+  background: transparent;
+}
+

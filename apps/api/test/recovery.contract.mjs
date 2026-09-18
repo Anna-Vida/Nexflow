@@ -10,6 +10,7 @@ import { NestFactory } from '@nestjs/core';
 import request from 'supertest';
 import { AppModule } from '../dist/app.module.js';
 import { PrismaService } from '../dist/database/prisma.service.js';
+import { createTestOwner } from '../dist/test-support/test-owner.js';
 
 const redisUrl = new URL(process.env.TEST_REDIS_URL ?? process.env.REDIS_URL ?? 'redis://127.0.0.1:6379');
 if (!process.env.TEST_REDIS_URL) redisUrl.pathname = '/15';
@@ -18,6 +19,7 @@ const app = await NestFactory.create(AppModule, { logger: false });
 app.setGlobalPrefix('api');
 await app.init();
 const prisma = app.get(PrismaService);
+const owner = await createTestOwner(prisma, 'recovery-contract');
 
 async function waitFor(predicate, label, timeoutMs = 60_000) {
   const deadline = Date.now() + timeoutMs;
@@ -116,7 +118,7 @@ async function createWebhookWorkflow() {
   ];
   return prisma.workflow.create({
     data: {
-      name: `Recovery contract ${randomUUID()}`, currentVersion: 1,
+      name: `Recovery contract ${randomUUID()}`, currentVersion: 1, ownerId: owner.id,
       versions: { create: { version: 1, nodes, edges } },
     },
   });
@@ -202,5 +204,6 @@ try {
     }
   });
 } finally {
+  await prisma.user.deleteMany({ where: { id: owner.id } }).catch(() => undefined);
   await app.close();
 }

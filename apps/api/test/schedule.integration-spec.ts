@@ -8,6 +8,8 @@ import type { WorkflowQueueService } from '../src/queue/workflow-queue.service.j
 import type { ExecutionsGateway } from '../src/workflows/executions.gateway.js';
 import type { SaveWorkflowDto } from '../src/workflows/workflow.schemas.js';
 
+import { createTestOwner, removeTestOwner } from '../src/test-support/test-owner.js';
+
 describe('persistent schedules with PostgreSQL', () => {
   const prisma = new PrismaService();
   const registered = new Set<string>();
@@ -27,6 +29,7 @@ describe('persistent schedules with PostgreSQL', () => {
   const schedules = new ScheduleService(prisma, queue);
   const workflows = new WorkflowsService(queue, {} as ExecutionsGateway, prisma, new IdempotentHttpService(prisma), schedules);
   let workflowId: string | undefined;
+  let ownerId: string;
 
   const scheduleNode = (config: { mode: 'interval' | 'cron'; timezone: string; enabled: boolean; intervalMinutes?: number; cron?: string }) => ({
     id: 'schedule-1',
@@ -50,17 +53,21 @@ describe('persistent schedules with PostgreSQL', () => {
     edges: [{ id: 'schedule-delay', source: 'schedule-1', target: 'delay-1' }],
   });
 
-  beforeAll(async () => { await prisma.$connect(); });
+  beforeAll(async () => {
+    await prisma.$connect();
+    ownerId = (await createTestOwner(prisma, 'schedule')).id;
+  });
   afterAll(async () => {
     if (workflowId) {
       await prisma.execution.deleteMany({ where: { workflowId } });
       await prisma.workflow.delete({ where: { id: workflowId } });
     }
+    await removeTestOwner(prisma, ownerId);
     await prisma.$disconnect();
   });
 
   it('saves a root schedule and creates one normal execution per scheduler job ID', async () => {
-    const saved = await workflows.save(request({ mode: 'interval', intervalMinutes: 60, timezone: 'Asia/Manila', enabled: true }));
+    const saved = await workflows.save(request({ mode: 'interval', intervalMinutes: 60, timezone: 'Asia/Manila', enabled: true }), ownerId);
     workflowId = saved.workflowId;
     const schedule = await prisma.scheduleDefinition.findUniqueOrThrow({
       where: { workflowId_nodeId: { workflowId, nodeId: 'schedule-1' } },
@@ -95,7 +102,7 @@ describe('persistent schedules with PostgreSQL', () => {
     await schedules.syncAll();
     expect(registered.size).toBe(1);
     operations.length = 0;
-    await workflows.save(request({ mode: 'cron', cron: '0 9 * * 1-5', timezone: 'Asia/Manila', enabled: true }, workflowId));
+    await workflows.save(request({ mode: 'cron', cron: '0 9 * * 1-5', timezone: 'Asia/Manila', enabled: true }, workflowId), ownerId);
     const edited = await prisma.scheduleDefinition.findUniqueOrThrow({ where: { id: original.id } });
     expect(edited.generation).toBe(2);
     expect(operations[0]).toBe(`remove:nexflow-schedule-${original.id}-1`);
@@ -106,7 +113,7 @@ describe('persistent schedules with PostgreSQL', () => {
     const updatedExecution = await prisma.execution.findUniqueOrThrow({ where: { id: updatedFire.executionId } });
     const updatedNodes = updatedExecution.nodes as Array<{ data: { kind: string; config: { mode?: string } } }>;
     expect(updatedNodes.find((node) => node.data.kind === 'schedule')?.data.config.mode).toBe('cron');
-    await workflows.save(request({ mode: 'cron', cron: '0 9 * * 1-5', timezone: 'Asia/Manila', enabled: false }, workflowId));
+    await workflows.save(request({ mode: 'cron', cron: '0 9 * * 1-5', timezone: 'Asia/Manila', enabled: false }, workflowId), ownerId);
     expect(registered.size).toBe(0);
     expect(await schedules.fire(original.id, 2, 'disabled-tick')).toEqual({ skipped: true });
   });
@@ -114,12 +121,12 @@ describe('persistent schedules with PostgreSQL', () => {
   it('rejects a schedule with an incoming edge', async () => {
     const invalid = request({ mode: 'interval', intervalMinutes: 1, timezone: 'Asia/Manila', enabled: true }, workflowId);
     invalid.edges.push({ id: 'bad', source: 'delay-1', target: 'schedule-1' });
-    await expect(workflows.save(invalid)).rejects.toThrow('root node');
+    await expect(workflows.save(invalid, ownerId)).rejects.toThrow('root node');
   });
 
   it('rejects an invalid cron expression before changing the saved version', async () => {
     const before = await prisma.workflow.findUniqueOrThrow({ where: { id: workflowId! } });
-    await expect(workflows.save(request({ mode: 'cron', cron: 'bad cron', timezone: 'Asia/Manila', enabled: true }, workflowId)))
+    await expect(workflows.save(request({ mode: 'cron', cron: 'bad cron', timezone: 'Asia/Manila', enabled: true }, workflowId), ownerId))
       .rejects.toThrow('invalid cron expression');
     const after = await prisma.workflow.findUniqueOrThrow({ where: { id: workflowId! } });
     expect(after.currentVersion).toBe(before.currentVersion);

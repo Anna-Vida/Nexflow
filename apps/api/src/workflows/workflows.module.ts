@@ -17,9 +17,10 @@ import { ExecutionRecoveryService } from '../recovery/execution-recovery.service
 import { ScheduleService } from '../schedules/schedule.service.js';
 
 import { QueueModule } from '../queue/queue.module.js';
+import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
-  imports: [QueueModule],
+  imports: [QueueModule, AuthModule],
   exports: [WorkflowsService],
   controllers: [
     WorkflowsController,

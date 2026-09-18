@@ -10,6 +10,7 @@ import { AppModule } from '../dist/app.module.js';
 import { PrismaService } from '../dist/database/prisma.service.js';
 import { WorkflowsService } from '../dist/workflows/workflows.service.js';
 import { redisConnection, WORKFLOW_QUEUE } from '../dist/queue/workflow-queue.js';
+import { createTestOwner } from '../dist/test-support/test-owner.js';
 
 const redisUrl = new URL(process.env.TEST_REDIS_URL ?? process.env.REDIS_URL ?? 'redis://127.0.0.1:6379');
 if (!process.env.TEST_REDIS_URL) redisUrl.pathname = '/14';
@@ -58,10 +59,13 @@ await test('PostgreSQL schedule survives API restart and BullMQ delivers one nor
   let worker;
   let workflowId;
   let scheduleId;
+  let ownerId;
   try {
     app = await NestFactory.createApplicationContext(AppModule, { logger: false });
     const workflows = app.get(WorkflowsService);
     const prisma = app.get(PrismaService);
+    const owner = await createTestOwner(prisma, 'schedule-contract');
+    ownerId = owner.id;
     const nodes = [
       { id: 'schedule-1', data: {
         kind: 'schedule', title: 'Schedule', subtitle: '', category: 'TRIGGER', icon: 'clock',
@@ -73,7 +77,7 @@ await test('PostgreSQL schedule survives API restart and BullMQ delivers one nor
       } },
     ];
     const edges = [{ id: 'schedule-delay', source: 'schedule-1', target: 'delay-1' }];
-    const saved = await workflows.save({ name: 'Schedule contract', nodes, edges });
+    const saved = await workflows.save({ name: 'Schedule contract', nodes, edges }, ownerId);
     workflowId = saved.workflowId;
     const schedule = await prisma.scheduleDefinition.findUniqueOrThrow({
       where: { workflowId_nodeId: { workflowId, nodeId: 'schedule-1' } },
@@ -91,7 +95,7 @@ await test('PostgreSQL schedule survives API restart and BullMQ delivers one nor
     assert.equal((await queue.getJobSchedulers()).filter((job) => job.key === key).length, 0);
     app = await NestFactory.createApplicationContext(AppModule, { logger: false });
     assert.equal((await queue.getJobSchedulers()).filter((job) => job.key === key).length, 1);
-    await app.get(WorkflowsService).save({ workflowId, name: 'Schedule contract', nodes, edges });
+    await app.get(WorkflowsService).save({ workflowId, name: 'Schedule contract', nodes, edges }, ownerId);
     assert.equal((await queue.getJobSchedulers()).filter((job) => job.key === key).length, 1);
 
     worker = await startWorker();
@@ -106,11 +110,11 @@ await test('PostgreSQL schedule survives API restart and BullMQ delivers one nor
     assert.equal(execution.workflowId, workflowId);
     assert.equal(execution.startNodeId, 'schedule-1');
     assert.equal(execution.attemptCount, 1);
-    assert.ok((await workflows.history(workflowId)).some((row) => row.id === execution.id));
+    assert.ok((await workflows.history(workflowId, ownerId)).some((row) => row.id === execution.id));
     assert.equal((await prisma.scheduledFire.count({ where: { bullJobId: `manual-schedule-${scheduleId}` } })), 1);
 
     await app.get(WorkflowsService).save({
-      workflowId, name: 'Schedule contract', edges,
+      workflowId, ownerId, name: 'Schedule contract', edges,
       nodes: [
         { ...nodes[0], data: { ...nodes[0].data, config: {
           mode: 'cron', cron: '0 9 * * 1-5', timezone: 'Asia/Manila', enabled: true,
@@ -126,7 +130,7 @@ await test('PostgreSQL schedule survives API restart and BullMQ delivers one nor
     assert.ok(cronJobs[0].next > Date.now());
 
     await app.get(WorkflowsService).save({
-      workflowId, name: 'Schedule contract', edges,
+      workflowId, ownerId, name: 'Schedule contract', edges,
       nodes: [
         { ...nodes[0], data: { ...nodes[0].data, config: {
           mode: 'cron', cron: '0 9 * * 1-5', timezone: 'Asia/Manila', enabled: false,
@@ -143,6 +147,7 @@ await test('PostgreSQL schedule survives API restart and BullMQ delivers one nor
         await prisma.execution.deleteMany({ where: { workflowId } });
         await prisma.workflow.delete({ where: { id: workflowId } });
       }
+      if (ownerId) await prisma.user.deleteMany({ where: { id: ownerId } }).catch(() => undefined);
       await app.close();
     }
     await queue.close();

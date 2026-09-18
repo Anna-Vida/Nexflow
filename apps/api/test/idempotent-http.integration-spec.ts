@@ -9,10 +9,12 @@ import type { WorkflowQueueService } from '../src/queue/workflow-queue.service.j
 import type { ExecutionsGateway } from '../src/workflows/executions.gateway.js';
 import type { ScheduleService } from '../src/schedules/schedule.service.js';
 import type { ExecuteWorkflowDto } from '../src/workflows/workflow.schemas.js';
+import { createTestOwner, removeTestOwner } from '../src/test-support/test-owner.js';
 
 describe('HTTP idempotency with PostgreSQL', () => {
   const prisma = new PrismaService();
   const ids: string[] = [];
+  let ownerId: string;
   let server: Server;
   let endpoint: string;
   let requests = 0;
@@ -47,7 +49,7 @@ describe('HTTP idempotency with PostgreSQL', () => {
     ids.push(executionId);
     await prisma.execution.create({
       data: {
-        id: executionId, status: 'QUEUED', attemptCount: 0, maxAttempts: 3,
+        id: executionId, ownerId, status: 'QUEUED', attemptCount: 0, maxAttempts: 3,
         nodes: JSON.parse(JSON.stringify(request(executionId).nodes)), edges: [], input: {},
       },
     });
@@ -55,6 +57,7 @@ describe('HTTP idempotency with PostgreSQL', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
+    ownerId = (await createTestOwner(prisma, 'idempotency')).id;
     // The integration suite deliberately requires the idempotency migration.
     await prisma.httpAction.count();
     server = createServer((req, res) => {
@@ -92,6 +95,7 @@ describe('HTTP idempotency with PostgreSQL', () => {
 
   afterAll(async () => {
     if (ids.length) await prisma.execution.deleteMany({ where: { id: { in: ids } } });
+    await removeTestOwner(prisma, ownerId);
     if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
     await prisma.$disconnect();
   });

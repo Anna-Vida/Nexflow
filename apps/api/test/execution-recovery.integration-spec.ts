@@ -9,9 +9,12 @@ import type { WorkflowQueueService } from '../src/queue/workflow-queue.service.j
 import type { ExecutionsGateway } from '../src/workflows/executions.gateway.js';
 import type { ScheduleService } from '../src/schedules/schedule.service.js';
 
+import { createTestOwner, removeTestOwner } from '../src/test-support/test-owner.js';
+
 describe('stale worker reconciliation with PostgreSQL', () => {
   const prisma = new PrismaService();
   const ids: string[] = [];
+  let ownerId: string;
   const enqueueRecovery = vi.fn().mockResolvedValue(undefined);
   const queue = { enqueueRecovery } as unknown as WorkflowQueueService;
   let recovery: ExecutionRecoveryService;
@@ -27,10 +30,12 @@ describe('stale worker reconciliation with PostgreSQL', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
+    ownerId = (await createTestOwner(prisma, 'recovery')).id;
     recovery = new ExecutionRecoveryService(prisma, queue);
   });
   afterAll(async () => {
     if (ids.length) await prisma.execution.deleteMany({ where: { id: { in: ids } } });
+    await removeTestOwner(prisma, ownerId);
     await prisma.$disconnect();
   });
 
@@ -40,7 +45,7 @@ describe('stale worker reconciliation with PostgreSQL', () => {
     const lease = randomUUID();
     await prisma.execution.create({
       data: {
-        id, status: 'RUNNING', nodes: nodes as object[], edges: [], input: {},
+        id, ownerId, status: 'RUNNING', nodes: nodes as object[], edges: [], input: {},
         attemptCount: 1, maxAttempts: 3,
         workerLeaseId: lease, workerHeartbeatAt: heartbeatAt,
       },

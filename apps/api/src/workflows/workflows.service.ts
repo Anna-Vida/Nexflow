@@ -52,6 +52,7 @@ export class WorkflowsService {
 
   async save(
     request: SaveWorkflowDto,
+    ownerId: string,
   ) {
     const saved = await this.prisma.$transaction(
       async (tx) => {
@@ -61,6 +62,7 @@ export class WorkflowsService {
               data: {
                 name: request.name,
                 currentVersion: 1,
+                ownerId,
               },
             });
 
@@ -99,11 +101,14 @@ export class WorkflowsService {
           };
         }
 
+        // Another account's workflow must look nonexistent, never forbidden.
         const existing =
-          await tx.workflow.findUnique({
+          await tx.workflow.findFirst({
             where: {
               id:
                 request.workflowId,
+
+              ownerId,
             },
           });
 
@@ -172,18 +177,19 @@ export class WorkflowsService {
     return saved;
   }
 
-  private async ensureWorkflowExists(workflowId?: string) {
+  private async ensureWorkflowExists(workflowId: string | undefined, ownerId: string) {
     if (!workflowId) return;
-    const workflow = await this.prisma.workflow.findUnique({
-      where: { id: workflowId }, select: { id: true },
+    const workflow = await this.prisma.workflow.findFirst({
+      where: { id: workflowId, ownerId }, select: { id: true },
     });
     if (!workflow) throw new NotFoundException('Workflow not found.');
   }
 
-  private async createExecutionRecord(request: ExecuteWorkflowDto, status: 'QUEUED' | 'RUNNING', startNodeId?: string) {
+  private async createExecutionRecord(request: ExecuteWorkflowDto, status: 'QUEUED' | 'RUNNING', ownerId: string, startNodeId?: string) {
     return this.prisma.execution.create({
       data: {
         id: request.executionId,
+        ownerId,
         workflowId: request.workflowId ?? null,
         status,
         startNodeId,
@@ -225,9 +231,9 @@ export class WorkflowsService {
     });
   }
 
-  async execute(request: ExecuteWorkflowDto, options?: WorkflowExecutionOptions) {
-    await this.ensureWorkflowExists(request.workflowId);
-    await this.createExecutionRecord(request, 'RUNNING');
+  async execute(request: ExecuteWorkflowDto, ownerId: string, options?: WorkflowExecutionOptions) {
+    await this.ensureWorkflowExists(request.workflowId, ownerId);
+    await this.createExecutionRecord(request, 'RUNNING', ownerId);
     const result = await executeWorkflow(request, (event) => {
       this.executionsGateway.emitEvent(request.executionId, event);
     }, options);
@@ -236,9 +242,9 @@ export class WorkflowsService {
     return result;
   }
 
-  async createQueuedExecution(request: ExecuteWorkflowDto, startNodeId?: string) {
-    await this.ensureWorkflowExists(request.workflowId);
-    return this.createExecutionRecord(request, 'QUEUED', startNodeId);
+  async createQueuedExecution(request: ExecuteWorkflowDto, ownerId: string, startNodeId?: string) {
+    await this.ensureWorkflowExists(request.workflowId, ownerId);
+    return this.createExecutionRecord(request, 'QUEUED', ownerId, startNodeId);
   }
 
   async failQueuedExecution(executionId: string, message: string, status: 'QUEUED' | 'RUNNING' = 'QUEUED') {
@@ -348,14 +354,14 @@ export class WorkflowsService {
     }
   }
 
-  async retryExecution(executionId: string) {
-    const original = await this.prisma.execution.findUnique({ where: { id: executionId } });
+  async retryExecution(executionId: string, ownerId: string) {
+    const original = await this.prisma.execution.findFirst({ where: { id: executionId, ownerId } });
     if (!original) throw new NotFoundException('Execution not found.');
     if (original.status !== 'FAILED') throw new ConflictException('Only failed executions can be retried.');
     const id = randomUUID();
     await this.prisma.execution.create({
       data: {
-        id, workflowId: original.workflowId,
+        id, ownerId, workflowId: original.workflowId,
         nodes: toJson(original.nodes), edges: toJson(original.edges), input: toJson(original.input),
         startNodeId: original.startNodeId, status: 'QUEUED', attemptCount: 0,
         maxAttempts: WORKFLOW_MAX_ATTEMPTS, retriedFromId: original.id,
@@ -372,10 +378,14 @@ export class WorkflowsService {
 
   async history(
     workflowId: string,
+    ownerId: string,
   ) {
+    await this.ensureWorkflowExists(workflowId, ownerId);
     return this.prisma.execution.findMany({
       where: {
         workflowId,
+
+        ownerId,
       },
 
       orderBy: {
@@ -396,8 +406,9 @@ export class WorkflowsService {
     });
   }
 
-  async list() {
+  async list(ownerId: string) {
     const workflows = await this.prisma.workflow.findMany({
+      where: { ownerId },
       orderBy: { updatedAt: 'desc' },
       include: {
         executions: {
@@ -423,9 +434,9 @@ export class WorkflowsService {
     }));
   }
 
-  async getById(workflowId: string) {
-    const workflow = await this.prisma.workflow.findUnique({
-      where: { id: workflowId },
+  async getById(workflowId: string, ownerId: string) {
+    const workflow = await this.prisma.workflow.findFirst({
+      where: { id: workflowId, ownerId },
     });
     if (!workflow) throw new NotFoundException('Workflow not found.');
 
@@ -447,8 +458,9 @@ export class WorkflowsService {
     };
   }
 
-  async recentExecutions() {
+  async recentExecutions(ownerId: string) {
     return this.prisma.execution.findMany({
+      where: { ownerId },
       orderBy: { startedAt: 'desc' },
       take: 10,
       select: {
@@ -459,9 +471,9 @@ export class WorkflowsService {
     });
   }
 
-  async executionDetails(executionId: string) {
-    const execution = await this.prisma.execution.findUnique({
-      where: { id: executionId },
+  async executionDetails(executionId: string, ownerId: string) {
+    const execution = await this.prisma.execution.findFirst({
+      where: { id: executionId, ownerId },
       include: {
         workflow: { select: { id: true, name: true } },
         events: { orderBy: { timestamp: 'asc' } },

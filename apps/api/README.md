@@ -105,10 +105,62 @@ from PostgreSQL, and a periodic sync repairs a missed Redis update.
 Ticks missed while the scheduler is unavailable are not backfilled; future
 ticks resume when service returns. Overlapping scheduled executions are allowed.
 
+```text
+Scheduler unavailable during a scheduled time
+        ↓
+the tick is missed
+        ↓
+service returns
+        ↓
+future scheduled ticks resume normally
+
+No automatic historical backfill
+```
+
+Saving a workflow with an unchanged schedule keeps its BullMQ generation, while
+editing or disabling the Schedule node removes the old registration before the
+replacement is added. Concurrency is intentionally open: a 20-minute run on a
+10-minute schedule may leave two active executions until overlap policies
+(`ALLOW`, `SKIP_IF_RUNNING`, `QUEUE_ONE`) are added.
+
 Run `npm run test:schedules` with PostgreSQL and Redis available to verify
 registration, restart restoration, delivery, history, and disablement. It
 uses Redis database 14 by default; set `TEST_REDIS_URL` to choose another
 dedicated test database.
+
+## Accounts and workflow ownership
+
+`POST /api/auth/register` and `POST /api/auth/login` return the account and set an
+HttpOnly, SameSite=Lax `nf_session` cookie with a seven-day lifetime. Passwords
+are stored as `scrypt` hashes with a per-account salt and the database stores only
+a SHA-256 hash of the opaque session token, so a leaked row cannot be replayed.
+`GET /api/auth/me` reports the current account and `POST /api/auth/logout` revokes
+the session.
+
+Every dashboard route under `/api/workflows` requires that session and is
+owner-scoped. Workflows, their versions, schedules, executions, retry history, and
+webhook tokens are only visible to `ownerId`. Requests for another account's
+workflow, execution, or schedule return `404 Not Found` rather than `403`, so
+resource existence is never leaked.
+
+Public webhook triggering stays separate from dashboard authentication:
+`/api/hooks/<token>/...` keeps using the workflow's random `webhookToken`, so
+external senders need no NexFlow account. The trigger creates the execution under
+the workflow owner and the dashboard never reveals another account's token.
+
+Socket.IO clients on the `/executions` namespace present the session cookie before
+they may join an execution room, and `execution:subscribe` verifies the execution's
+owner. Knowing an execution ID is not enough.
+
+Workflows and executions created before authentication existed belong to a
+disabled `legacy@nexflow.invalid` account; the first signup adopts them in the same
+transaction that creates the account.
+
+Run `npm run test:integration` with PostgreSQL to verify account sessions and the
+ownership matrix (load, save, history, execution detail, retry, schedule
+manipulation, live subscription, unauthenticated access, and public webhook
+triggering). The web client signs in through `/login`; `RequireSession` keeps the
+dashboard and workspace behind that session.
 
 ## Compile and run the project
 

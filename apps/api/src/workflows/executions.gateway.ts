@@ -1,6 +1,7 @@
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -14,6 +15,8 @@ import type {
   ExecutionEvent,
   WorkflowExecutionResult,
 } from './workflow.engine.js';
+import { AuthService } from '../auth/auth.service.js';
+import { PrismaService } from '../database/prisma.service.js';
 
 const subscriptionSchema = z.object({
   executionId: z.string().uuid(),
@@ -22,9 +25,27 @@ const subscriptionSchema = z.object({
 @WebSocketGateway({
   namespace: '/executions',
 })
-export class ExecutionsGateway {
+export class ExecutionsGateway implements OnGatewayConnection {
   @WebSocketServer()
   server!: Server;
+
+  constructor(
+    private readonly auth: AuthService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  // The session cookie must identify the socket before it observes anything.
+  async handleConnection(
+    @ConnectedSocket()
+    client: Socket,
+  ) {
+    const user = await this.auth.userFromCookie(client.handshake.headers.cookie);
+    if (!user) {
+      client.disconnect(true);
+      return;
+    }
+    (client.data as { userId?: string }).userId = user.id;
+  }
 
   @SubscribeMessage('execution:subscribe')
   async subscribe(
@@ -42,6 +63,37 @@ export class ExecutionsGateway {
         ok: false,
         message:
           'Invalid execution ID.',
+      };
+    }
+
+    const userId =
+      (client.data as { userId?: string }).userId;
+
+    if (!userId) {
+      return {
+        ok: false,
+        message:
+          'Sign in to watch executions.',
+      };
+    }
+
+    // Knowing an execution ID is not enough; its workflow owner decides.
+    const execution =
+      await this.prisma.execution.findUnique({
+        where: {
+          id: parsed.data.executionId,
+        },
+
+        select: {
+          ownerId: true,
+        },
+      });
+
+    if (!execution || execution.ownerId !== userId) {
+      return {
+        ok: false,
+        message:
+          'Execution not found.',
       };
     }
 

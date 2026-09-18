@@ -54,8 +54,16 @@ await test('public webhook HTTP and persistence contract', { timeout: 180000 }, 
   app.setGlobalPrefix('api');
   const prisma = app.get(PrismaService);
   let workflow;
+  let ownerId;
+  let http;
   try {
     await app.init();
+    // Dashboard routes are owner-scoped; the agent keeps the session cookie.
+    http = request.agent(app.getHttpServer());
+    const signup = await http.post('/api/auth/register')
+      .send({ email: `webhook-contract-${randomUUID()}@nexflow.test`, password: 'a-long-contract-password', name: 'Webhook Contract' })
+      .expect(201);
+    ownerId = signup.body.id;
     await queue.waitUntilReady();
     await sleep(200);
     const nodes = [
@@ -80,11 +88,11 @@ await test('public webhook HTTP and persistence contract', { timeout: 180000 }, 
       data: {
         name: `Webhook contract test ${randomUUID()}`,
         currentVersion: 1,
+        ownerId,
         versions: { create: { version: 1, nodes, edges } },
       },
     });
     const endpoint = `/api/hooks/${workflow.webhookToken}/purchase/approval`;
-    const http = request(app.getHttpServer());
 
     async function waitForExecution(executionId, statuses) {
       const deadline = Date.now() + 20000;
@@ -271,6 +279,9 @@ await test('public webhook HTTP and persistence contract', { timeout: 180000 }, 
       await prisma.execution.deleteMany({ where: { workflowId: workflow.id } });
       await prisma.workflow.delete({ where: { id: workflow.id } });
     }
+    // The first signup adopts any pre-authentication rows, so cleanup only
+    // removes the account when nothing still references it.
+    if (ownerId) await prisma.user.deleteMany({ where: { id: ownerId } }).catch(() => undefined);
     await app.close();
   }
 });

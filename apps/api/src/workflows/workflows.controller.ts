@@ -7,8 +7,11 @@ import {
   Get,
   Param,
   Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { z } from 'zod';
+import { AuthGuard, type AuthenticatedRequest } from '../auth/auth.guard.js';
 import {
   executeWorkflowSchema,
   saveWorkflowSchema,
@@ -25,7 +28,10 @@ function parseUuid(value: string) {
   return parsed.data;
 }
 
+// Every dashboard route is owner-scoped: the session decides which workflows,
+// executions, and webhook tokens the caller may observe.
 @Controller('workflows')
+@UseGuards(AuthGuard)
 export class WorkflowsController {
   constructor(
     private readonly workflowsService:
@@ -33,33 +39,36 @@ export class WorkflowsController {
   ) {}
 
   @Get()
-  list() {
-    return this.workflowsService.list();
+  list(@Req() request: AuthenticatedRequest) {
+    return this.workflowsService.list(request.user.id);
   }
 
   @Get('executions/recent')
-  recentExecutions() {
-    return this.workflowsService.recentExecutions();
+  recentExecutions(@Req() request: AuthenticatedRequest) {
+    return this.workflowsService.recentExecutions(request.user.id);
   }
 
   @Get('executions/:executionId')
-  executionDetails(@Param('executionId') executionId: string) {
-    return this.workflowsService.executionDetails(parseUuid(executionId));
+  executionDetails(@Req() request: AuthenticatedRequest, @Param('executionId') executionId: string) {
+    return this.workflowsService.executionDetails(parseUuid(executionId), request.user.id);
   }
 
   @Post('executions/:executionId/retry')
   @HttpCode(HttpStatus.ACCEPTED)
-  retry(@Param('executionId') executionId: string) {
-    return this.workflowsService.retryExecution(parseUuid(executionId));
+  retry(@Req() request: AuthenticatedRequest, @Param('executionId') executionId: string) {
+    return this.workflowsService.retryExecution(parseUuid(executionId), request.user.id);
   }
 
   @Get(':workflowId')
-  getById(@Param('workflowId') workflowId: string) {
-    return this.workflowsService.getById(parseUuid(workflowId));
+  getById(@Req() request: AuthenticatedRequest, @Param('workflowId') workflowId: string) {
+    return this.workflowsService.getById(parseUuid(workflowId), request.user.id);
   }
 
   @Post('save')
   save(
+    @Req()
+    request: AuthenticatedRequest,
+
     @Body()
     body: unknown,
   ) {
@@ -78,11 +87,14 @@ export class WorkflowsController {
     }
 
     return this.workflowsService
-      .save(parsed.data);
+      .save(parsed.data, request.user.id);
   }
 
   @Post('execute')
   execute(
+    @Req()
+    request: AuthenticatedRequest,
+
     @Body()
     body: unknown,
   ) {
@@ -101,15 +113,18 @@ export class WorkflowsController {
     }
 
     return this.workflowsService
-      .execute(parsed.data);
+      .execute(parsed.data, request.user.id);
   }
 
   @Get(':workflowId/executions')
   history(
+    @Req()
+    request: AuthenticatedRequest,
+
     @Param('workflowId')
     workflowId: string,
   ) {
     return this.workflowsService
-      .history(parseUuid(workflowId));
+      .history(parseUuid(workflowId), request.user.id);
   }
 }

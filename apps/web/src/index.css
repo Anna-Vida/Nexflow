@@ -23,6 +23,15 @@ body {
   min-height: 100vh;
 }
 
+.session-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8a8b94;
+  font-size: 13px;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;
