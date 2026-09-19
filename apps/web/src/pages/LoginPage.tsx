@@ -43,16 +43,16 @@ function oauthMessage(value: string | null) {
 
 const SLIDES = [
   {
-    title: 'Capturing Moments,\nCreating Memories',
+    title: 'Automate Workflows,\nScale Reliably',
+    subtitle: 'Webhooks, scheduled crons, and crash-resilient executions.',
+  },
+  {
+    title: 'Build the Flow,\nRun the System',
     subtitle: 'Visual automation crafted for clarity, precision, and reliable execution.',
   },
   {
-    title: 'Orchestrate Flows,\nEliminate Downtime',
-    subtitle: 'Idempotent HTTP steps, crash leases, and live queue subscriptions.',
-  },
-  {
     title: 'Workspaces Built\nFor Real Systems',
-    subtitle: 'From webhooks to scheduled crons with guaranteed state persistence.',
+    subtitle: 'Idempotent HTTP steps, crash leases, and live queue subscriptions.',
   },
 ]
 
