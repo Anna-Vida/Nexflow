@@ -19,4 +19,13 @@ describe('AppController', () => {
       expect(appController.getHello()).toBe('Hello World!');
     });
   });
+
+  describe('health', () => {
+    it('should report the API as healthy', () => {
+      const result = appController.health();
+      expect(result.status).toBe('ok');
+      expect(result.service).toBe('nexflow-api');
+      expect(Number.isNaN(Date.parse(result.timestamp))).toBe(false);
+    });
+  });
 });
