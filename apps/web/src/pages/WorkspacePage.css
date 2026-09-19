@@ -1218,3 +1218,287 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
+/* Violet product theme ----------------------------------------------------- */
+.workspace {
+  --ws-violet: #9b6dff;
+  --ws-violet-2: #c084fc;
+  --ws-panel: rgba(18, 12, 45, 0.82);
+  --ws-line: rgba(196, 163, 255, 0.13);
+  background:
+    radial-gradient(circle at 50% -12%, rgba(124,58,237,0.28), transparent 30rem),
+    linear-gradient(180deg, #0b0623 0%, #08051a 100%);
+}
+
+.workspace-header {
+  border-bottom-color: rgba(196,163,255,0.1);
+  background: rgba(9, 6, 27, 0.9);
+  backdrop-filter: blur(16px);
+}
+
+.workspace-logo {
+  border: 1px solid rgba(196,163,255,0.32);
+  background: linear-gradient(135deg, #d68cff 0%, #9c67ff 48%, #6f36ee 100%);
+  box-shadow: 0 8px 24px rgba(124,58,237,0.28);
+}
+
+.header-divider {
+  background: rgba(196,163,255,0.12);
+}
+
+.workflow-title > span {
+  border-color: rgba(196,163,255,0.13);
+  color: #8f86a6;
+  background: rgba(255,255,255,0.025);
+}
+
+.saved-status {
+  color: #817996;
+}
+
+.saved-status > span,
+.saved-dot {
+  background: #b08aff !important;
+  box-shadow: 0 0 8px rgba(176,138,255,0.4);
+}
+
+.workspace-secondary-button {
+  border-color: rgba(196,163,255,0.13);
+  color: #c8c1da;
+  background: rgba(255,255,255,0.035);
+}
+
+.workspace-secondary-button:hover {
+  border-color: rgba(196,163,255,0.27);
+  background: rgba(155,109,255,0.07);
+}
+
+.run-button {
+  border-color: rgba(255,255,255,0.1);
+  background: linear-gradient(135deg, #d98cff 0%, #a367ff 48%, #7f3eff 100%);
+  box-shadow:
+    0 10px 28px rgba(124,58,237,0.28),
+    inset 0 1px rgba(255,255,255,0.16);
+}
+
+.node-sidebar,
+.config-panel,
+.data-panel-overlay {
+  border-color: rgba(196,163,255,0.1);
+  background:
+    linear-gradient(180deg, rgba(69,41,122,0.12), rgba(255,255,255,0.01)),
+    rgba(10, 7, 27, 0.96);
+}
+
+.node-category button:hover {
+  border-color: rgba(196,163,255,0.15);
+  background: rgba(155,109,255,0.06);
+}
+
+.palette-icon.purple,
+.palette-icon.blue,
+.palette-icon.orange,
+.palette-icon.green {
+  color: #d4a5ff;
+  background: rgba(155,109,255,0.11);
+}
+
+.sidebar-tip,
+.config-info,
+.data-panel-tip,
+.variable-row {
+  border-color: rgba(196,163,255,0.09);
+  background: rgba(255,255,255,0.025);
+}
+
+.sidebar-tip > span {
+  color: #bb93ff;
+}
+
+.flow-area {
+  background:
+    radial-gradient(circle at center, rgba(124,58,237,0.09), transparent 28rem),
+    #070515;
+}
+
+.builder-node {
+  border-color: rgba(196,163,255,0.16);
+  background:
+    linear-gradient(180deg, rgba(85,51,151,0.18), rgba(255,255,255,0.015)),
+    rgba(15, 10, 39, 0.96);
+  box-shadow:
+    0 16px 36px rgba(0,0,0,0.34),
+    inset 0 1px rgba(255,255,255,0.04);
+}
+
+.builder-node:hover {
+  border-color: rgba(196,163,255,0.32);
+}
+
+.builder-node.selected {
+  border-color: #a876ff;
+  box-shadow:
+    0 0 0 1px rgba(168,118,255,0.28),
+    0 0 30px rgba(124,58,237,0.14),
+    0 16px 36px rgba(0,0,0,0.34);
+}
+
+.builder-node-icon {
+  color: #d7a7ff;
+  background: rgba(155,109,255,0.13);
+}
+
+.builder-handle {
+  border-color: #100b29 !important;
+  background: #a66cff !important;
+}
+
+.react-flow__edge-path {
+  stroke: #9a70e8;
+}
+
+.react-flow__controls {
+  border-color: rgba(196,163,255,0.13) !important;
+}
+
+.react-flow__controls-button {
+  border-bottom-color: rgba(196,163,255,0.1) !important;
+  color: #aca5be !important;
+  background: rgba(20,14,47,0.96) !important;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(43,28,83,0.96) !important;
+}
+
+.react-flow__minimap {
+  border-color: rgba(196,163,255,0.12);
+  background: #0d0920 !important;
+}
+
+.canvas-help,
+.execution-banner {
+  border-color: rgba(196,163,255,0.1);
+  background: rgba(12, 8, 32, 0.9);
+  backdrop-filter: blur(12px);
+}
+
+.config-header,
+.data-panel-header,
+.data-panel-tabs {
+  border-color: rgba(196,163,255,0.09);
+}
+
+.config-header span,
+.data-panel-header span {
+  color: #a68ada;
+}
+
+.config-close,
+.data-panel-header > button,
+.data-panel-actions button {
+  border-color: rgba(196,163,255,0.12);
+  color: #9d95b2;
+  background: rgba(255,255,255,0.035);
+}
+
+.config-field input,
+.config-field select,
+.config-field textarea,
+.test-input-editor {
+  border-color: rgba(196,163,255,0.12);
+  color: #e6e0f2;
+  background: rgba(255,255,255,0.025);
+}
+
+.config-field input:focus,
+.config-field select:focus,
+.config-field textarea:focus,
+.test-input-editor:focus {
+  border-color: rgba(183,134,255,0.72);
+  box-shadow: 0 0 0 3px rgba(155,109,255,0.08);
+}
+
+.webhook-endpoint strong,
+.webhook-endpoint code,
+.data-panel-tip code,
+.variable-row code {
+  color: #c3a5ff;
+}
+
+.webhook-endpoint button,
+.retry-button {
+  border-color: rgba(196,163,255,0.22);
+  color: #e3d7ff;
+  background: rgba(155,109,255,0.12);
+}
+
+.data-panel-tabs button.active::after,
+.data-live-dot {
+  background: #a96eff;
+}
+
+.data-live-dot {
+  box-shadow: 0 0 8px rgba(169,110,255,0.65);
+}
+
+.variable-row:hover {
+  border-color: rgba(196,163,255,0.22);
+  background: rgba(155,109,255,0.055);
+}
+
+.builder-node.status-running {
+  border-color: #a96eff;
+  box-shadow:
+    0 0 0 1px rgba(169,110,255,0.18),
+    0 0 30px rgba(124,58,237,0.15);
+}
+
+.runtime-indicator.running,
+.execution-banner.running .execution-banner-dot {
+  color: #d3b8ff;
+  border-color: rgba(169,110,255,0.48);
+}
+
+.execution-banner.running .execution-banner-dot {
+  background: #a96eff;
+  box-shadow: 0 0 12px rgba(169,110,255,0.72);
+}
+
+.workflow-title-input {
+  color: #f0ebf8;
+}
+
+.workflow-title-input:hover {
+  border-color: rgba(196,163,255,0.11);
+  background: rgba(255,255,255,0.025);
+}
+
+.workflow-title-input:focus {
+  border-color: rgba(169,110,255,0.64);
+  background: rgba(255,255,255,0.035);
+  box-shadow: 0 0 0 3px rgba(155,109,255,0.08);
+}
+
+.workspace-state {
+  color: #f2edfa;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(124,58,237,0.2), transparent 24rem),
+    #070515;
+}
+
+.workspace-state > div {
+  border-color: rgba(196,163,255,0.13);
+  background: rgba(15,10,39,0.86);
+}
+
+.workspace-state > div > span {
+  border-color: rgba(196,163,255,0.2);
+  color: #d2a4ff;
+  background: rgba(155,109,255,0.12);
+}
+
+.workspace-state a {
+  color: #c1a1ff;
+}
