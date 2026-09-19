@@ -97,14 +97,20 @@ export class AuthController {
   }
 
   private beginOAuth(provider: OAuthProvider, response: Response) {
-    const authorization = this.auth.oauthAuthorization(provider)
+    try {
+      const authorization = this.auth.oauthAuthorization(provider)
 
-    response.setHeader(
-      'Set-Cookie',
-      this.auth.getOAuthStateCookie(provider, authorization.state),
-    )
+      response.setHeader(
+        'Set-Cookie',
+        this.auth.getOAuthStateCookie(provider, authorization.state),
+      )
 
-    return response.redirect(authorization.url)
+      return response.redirect(authorization.url)
+    } catch {
+      return response.redirect(
+        `${this.auth.getWebOrigin()}/login?oauth=${provider}_not_configured`,
+      )
+    }
   }
 
   private async completeOAuth(
