@@ -2219,9 +2219,9 @@ footer p {
 }
 
 .nex-nav {
-  position: sticky;
-  top: 14px;
-  z-index: 50;
+  position: relative;
+  top: auto;
+  z-index: 10;
   width: min(1120px, calc(100% - 32px));
   height: 62px;
   margin-top: 14px;
@@ -2401,7 +2401,7 @@ footer p {
 
 @media (max-width: 700px) {
   .nex-nav {
-    top: 8px;
+    top: auto;
     width: calc(100% - 18px);
     margin-top: 8px;
     padding-inline: 13px;
