@@ -29,6 +29,8 @@ function oauthMessage(value: string | null) {
   if (!value) return null
   if (value === 'access_denied') return 'OAuth sign-in was cancelled.'
   if (value === 'invalid_state') return 'The sign-in request expired. Please try again.'
+  if (value === 'google_not_configured') return 'Google sign-in is not configured yet.'
+  if (value === 'github_not_configured') return 'GitHub sign-in is not configured yet.'
   return 'OAuth sign-in could not be completed. Please try again.'
 }
 
