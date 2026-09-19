@@ -1360,3 +1360,319 @@ body {
     animation: none !important;
   }
 }
+
+
+/* Developer section -------------------------------------------------------- */
+.nexa-developer {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  align-items: center;
+  gap: 72px;
+}
+
+.nexa-developer-copy {
+  max-width: 560px;
+}
+
+.nexa-developer-copy h2 {
+  margin: 18px 0 14px;
+  color: white;
+  font-size: clamp(36px, 4.2vw, 56px);
+  line-height: 1.02;
+  letter-spacing: -2.8px;
+  font-weight: 650;
+}
+
+.nexa-developer-copy > p {
+  margin: 0;
+  color: #9188a8;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.nexa-developer-meta {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid rgba(196,163,255,0.09);
+  border-bottom: 1px solid rgba(196,163,255,0.09);
+}
+
+.nexa-developer-meta div {
+  min-height: 82px;
+  padding: 17px 12px 17px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid rgba(196,163,255,0.09);
+}
+
+.nexa-developer-meta div + div {
+  padding-left: 12px;
+}
+
+.nexa-developer-meta div:last-child {
+  border-right: 0;
+}
+
+.nexa-developer-meta span {
+  color: #665e7c;
+  font-size: 7px;
+  font-weight: 760;
+  letter-spacing: 1.1px;
+}
+
+.nexa-developer-meta strong {
+  margin-top: 6px;
+  color: #c7bfd9;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.nexa-developer-actions {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nexa-developer-card {
+  position: relative;
+  min-height: 470px;
+  display: grid;
+  place-items: center;
+  perspective: 1200px;
+}
+
+.nexa-dev-orbit {
+  position: absolute;
+  border: 1px solid rgba(196,163,255,0.1);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.nexa-dev-orbit-one {
+  width: 410px;
+  height: 410px;
+  animation: nexa-spin 28s linear infinite;
+}
+
+.nexa-dev-orbit-two {
+  width: 300px;
+  height: 300px;
+  border-style: dashed;
+  animation: nexa-spin 20s linear infinite reverse;
+}
+
+.nexa-dev-folder {
+  position: relative;
+  z-index: 3;
+  width: 390px;
+  height: 270px;
+  transform-style: preserve-3d;
+  transform: rotateX(7deg) rotateY(-14deg) rotateZ(-2deg);
+  animation: nexa-dev-float 7s ease-in-out infinite;
+}
+
+.nexa-dev-folder-back,
+.nexa-dev-folder-front {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(196,163,255,0.24);
+  border-radius: 14px 14px 18px 18px;
+  background: linear-gradient(145deg, #241445, #130b2f);
+}
+
+.nexa-dev-folder-back {
+  transform: translateZ(-8px);
+}
+
+.nexa-dev-folder-back > span {
+  position: absolute;
+  width: 142px;
+  height: 42px;
+  left: 20px;
+  top: -29px;
+  padding: 11px 14px;
+  border: 1px solid rgba(196,163,255,0.24);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  color: #c8adff;
+  background: #241445;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 1.2px;
+}
+
+.nexa-dev-paper {
+  position: absolute;
+  width: 330px;
+  height: 210px;
+  left: 30px;
+  top: 18px;
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 10px;
+  color: #17111f;
+  background: #eee9f7;
+  transform-origin: bottom center;
+  box-shadow: 0 18px 30px rgba(0,0,0,0.18);
+}
+
+.nexa-dev-paper-back {
+  padding-top: 32px;
+  transform: translateZ(3px) translateY(-26px) rotateX(-5deg) rotateZ(2deg);
+  background: #d7cee9;
+}
+
+.nexa-dev-paper-back span,
+.nexa-dev-paper-back strong,
+.nexa-dev-paper-back small {
+  display: block;
+}
+
+.nexa-dev-paper-back span {
+  color: #7f748f;
+  font-size: 8px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.nexa-dev-paper-back strong {
+  margin-top: 46px;
+  max-width: 230px;
+  font-size: 20px;
+  line-height: 1.05;
+  letter-spacing: -0.8px;
+}
+
+.nexa-dev-paper-back small {
+  margin-top: 8px;
+  color: #6d6478;
+}
+
+.nexa-dev-paper-front {
+  z-index: 4;
+  transform: translateZ(24px) translateY(-10px) rotateX(-3deg) rotateZ(-1deg);
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1);
+}
+
+.nexa-dev-folder:hover .nexa-dev-paper-front {
+  transform: translateZ(56px) translateY(-38px) rotateX(-7deg) rotateZ(-1deg);
+}
+
+.nexa-dev-kicker {
+  display: block;
+  margin-bottom: 30px;
+  color: #796d88;
+  font-size: 8px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 1px;
+}
+
+.nexa-dev-paper-front h3 {
+  margin: 0;
+  color: #16111d;
+  font-size: 24px;
+  letter-spacing: -1px;
+}
+
+.nexa-dev-paper-front p {
+  max-width: 250px;
+  margin: 10px 0 0;
+  color: #655c70;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.nexa-dev-tags {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.nexa-dev-tags span {
+  padding: 4px 6px;
+  border: 1px solid #c7bbd6;
+  border-radius: 4px;
+  color: #6b6275;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 7px;
+}
+
+.nexa-dev-folder-front {
+  z-index: 7;
+  top: 91px;
+  height: 180px;
+  padding: 24px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  transform: translateZ(45px) rotateX(-2deg);
+  background:
+    linear-gradient(155deg, rgba(255,255,255,0.06), transparent 30%),
+    linear-gradient(145deg, #4a2a7c, #281449);
+  box-shadow:
+    0 28px 50px rgba(0,0,0,0.28),
+    inset 0 1px rgba(255,255,255,0.06);
+}
+
+.nexa-dev-folder-front span,
+.nexa-dev-folder-front strong {
+  color: #d7c2ff;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+
+.nexa-dev-folder-front strong {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(215,194,255,0.4);
+  border-radius: 50%;
+}
+
+@keyframes nexa-dev-float {
+  0%, 100% {
+    transform: rotateX(7deg) rotateY(-14deg) rotateZ(-2deg) translateY(0);
+  }
+  50% {
+    transform: rotateX(9deg) rotateY(-10deg) rotateZ(-1deg) translateY(-8px);
+  }
+}
+
+@media (max-width: 1020px) {
+  .nexa-developer {
+    grid-template-columns: 1fr;
+    gap: 56px;
+  }
+
+  .nexa-developer-copy {
+    max-width: 700px;
+  }
+}
+
+@media (max-width: 720px) {
+  .nexa-developer-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .nexa-developer-meta div,
+  .nexa-developer-meta div + div {
+    padding: 14px 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(196,163,255,0.09);
+  }
+
+  .nexa-developer-meta div:last-child {
+    border-bottom: 0;
+  }
+
+  .nexa-developer-card {
+    min-height: 370px;
+    transform: scale(0.78);
+    margin: -40px -60px;
+  }
+}
