@@ -474,7 +474,7 @@
   margin-bottom: 24px;
   padding: 4px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 5px;
   border: 1px solid rgba(196,163,255,0.1);
   border-radius: 11px;
@@ -906,9 +906,6 @@
   display: block;
 }
 
-.auth-github-icon {
-  color: #f5f3f7;
-}
 
 .auth-divider {
   margin: 6px 0 14px;
