@@ -4,115 +4,153 @@ import '../App.css'
 const githubUrl = 'https://github.com/Anna-Vida/Nexflow'
 const profileUrl = 'https://github.com/Anna-Vida'
 
-function WorkflowPreview() {
+const stack = [
+  'React',
+  'NestJS',
+  'PostgreSQL',
+  'Redis',
+  'BullMQ',
+  'Socket.IO',
+]
+
+const capabilities = [
+  {
+    icon: '⚡',
+    title: 'Get more done',
+    body: 'Build workflows visually, trigger them from webhooks or schedules, and move work automatically.',
+  },
+  {
+    icon: '◫',
+    title: 'See every run',
+    body: 'Live execution status, retry history, node events, and persisted execution details stay visible.',
+  },
+  {
+    icon: '◎',
+    title: 'Recover safely',
+    body: 'Leases, heartbeats, idempotent HTTP checkpoints, and crash reconciliation protect side effects.',
+  },
+  {
+    icon: '⌾',
+    title: 'Built for real systems',
+    body: 'Authentication, workflow ownership, queues, PostgreSQL history, and scheduled execution are built in.',
+  },
+]
+
+const integrations = [
+  ['↗', 'Webhook'],
+  ['{ }', 'HTTP API'],
+  ['◷', 'Schedule'],
+  ['◇', 'Condition'],
+  ['PG', 'PostgreSQL'],
+  ['R', 'Redis'],
+  ['Q', 'BullMQ'],
+  ['◉', 'Socket.IO'],
+  ['P', 'Prisma'],
+  ['GH', 'GitHub'],
+]
+
+const faq = [
+  [
+    'What is NexFlow?',
+    'NexFlow is a visual workflow automation engine for designing, executing, scheduling, and monitoring backend workflows.',
+  ],
+  [
+    'Can NexFlow run real HTTP actions?',
+    'Yes. HTTP actions execute through the backend with SSRF protections, retries, persisted checkpoints, and recovery rules.',
+  ],
+  [
+    'What happens if a worker crashes?',
+    'NexFlow uses worker leases, heartbeats, durable HTTP action state, and crash reconciliation to resume only when recovery is safe.',
+  ],
+  [
+    'Can workflows run on a schedule?',
+    'Yes. Saved workflows can use interval or cron schedules with an explicit timezone and PostgreSQL-backed tick history.',
+  ],
+  [
+    'Does NexFlow have user accounts?',
+    'Yes. Accounts use scrypt password hashing, HttpOnly sessions, workflow ownership, and protected execution subscriptions.',
+  ],
+]
+
+function BrandMark() {
   return (
-    <div className="nex-workflow-shell" aria-label="NexFlow workflow preview">
-      <div className="nex-window-bar">
-        <div className="nex-window-dots" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-        <span className="nex-window-title">payment-alert.flow</span>
-        <div className="nex-live-chip">
-          <span />
-          live
-        </div>
-      </div>
-
-      <div className="nex-canvas">
-        <div className="nex-canvas-grid" />
-
-        <div className="nex-node nex-node-webhook">
-          <div className="nex-node-head">
-            <span className="nex-node-type">TRIGGER</span>
-            <span className="nex-node-ok">✓</span>
-          </div>
-          <strong>Webhook received</strong>
-          <small>POST /payments/created</small>
-          <div className="nex-node-output">200 · 18 ms</div>
-        </div>
-
-        <div className="nex-flow-line nex-flow-line-one">
-          <span />
-        </div>
-
-        <div className="nex-node nex-node-condition">
-          <div className="nex-node-head">
-            <span className="nex-node-type">LOGIC</span>
-            <span className="nex-node-ok">✓</span>
-          </div>
-          <strong>High value?</strong>
-          <small>amount &gt; 10,000</small>
-          <div className="nex-node-output">true</div>
-        </div>
-
-        <div className="nex-flow-line nex-flow-line-two">
-          <span />
-        </div>
-
-        <div className="nex-node nex-node-http">
-          <div className="nex-node-head">
-            <span className="nex-node-type">ACTION</span>
-            <span className="nex-spinner" />
-          </div>
-          <strong>Notify finance</strong>
-          <small>POST /api/notify</small>
-          <div className="nex-node-output nex-node-output-running">running</div>
-        </div>
-
-        <div className="nex-execution-card">
-          <div className="nex-execution-row">
-            <span>execution</span>
-            <strong>#4f91a2</strong>
-          </div>
-          <div className="nex-execution-row">
-            <span>attempt</span>
-            <strong>1 / 3</strong>
-          </div>
-          <div className="nex-execution-progress">
-            <span />
-          </div>
-          <div className="nex-execution-foot">
-            <span className="nex-pulse-dot" />
-            processing workflow
-          </div>
-        </div>
-      </div>
-    </div>
+    <span className="nexa-brand-mark" aria-hidden="true">
+      <i />
+      <i />
+    </span>
   )
 }
 
-function DeveloperFolder() {
+function HeroAutomation() {
   return (
-    <div className="nex-folder-stage" aria-label="Developer profile">
-      <div className="nex-folder-shadow" />
-      <div className="nex-folder">
-        <div className="nex-folder-back">
-          <div className="nex-folder-tab">DEVELOPER</div>
-        </div>
+    <div className="nexa-hero-art" aria-label="Visual automation diagram">
+      <div className="nexa-hero-grid" />
+      <div className="nexa-orbit nexa-orbit-a" />
+      <div className="nexa-orbit nexa-orbit-b" />
 
-        <div className="nex-folder-paper nex-folder-paper-back">
-          <span>01</span>
-          <strong>systems</strong>
-          <small>workflow orchestration</small>
-        </div>
+      <div className="nexa-core-cube">
+        <div className="nexa-core-top">NF</div>
+        <div className="nexa-core-front">FLOW</div>
+        <div className="nexa-core-side">01</div>
+        <span className="nexa-core-glow" />
+      </div>
 
-        <div className="nex-folder-paper nex-folder-paper-front">
-          <div className="nex-profile-kicker">PROFILE / 2026</div>
-          <strong>Anna Patricia B. Vida</strong>
-          <p>Full-stack developer building practical, reliable software.</p>
-          <div className="nex-profile-tags">
-            <span>React</span>
-            <span>NestJS</span>
-            <span>PostgreSQL</span>
-          </div>
-        </div>
+      <div className="nexa-agent nexa-agent-one">
+        <span className="nexa-agent-face">••</span>
+      </div>
+      <div className="nexa-agent nexa-agent-two">
+        <span className="nexa-agent-face">••</span>
+      </div>
+      <div className="nexa-agent nexa-agent-three">
+        <span className="nexa-agent-face">••</span>
+      </div>
 
-        <div className="nex-folder-front">
-          <span>NEXFLOW / DEV</span>
-          <span>AV</span>
+      <div className="nexa-line nexa-line-one" />
+      <div className="nexa-line nexa-line-two" />
+      <div className="nexa-line nexa-line-three" />
+      <div className="nexa-line nexa-line-four" />
+
+      <div className="nexa-float-node nexa-node-webhook">
+        <span className="nexa-node-icon">↗</span>
+        <div>
+          <small>TRIGGER</small>
+          <strong>Webhook</strong>
+          <p>Receive requests</p>
         </div>
+      </div>
+
+      <div className="nexa-float-node nexa-node-condition">
+        <span className="nexa-node-icon">◇</span>
+        <div>
+          <small>LOGIC</small>
+          <strong>Condition</strong>
+          <p>Route the workflow</p>
+        </div>
+      </div>
+
+      <div className="nexa-float-node nexa-node-action">
+        <span className="nexa-node-icon">⚡</span>
+        <div>
+          <small>ACTION</small>
+          <strong>HTTP request</strong>
+          <p>Execute real work</p>
+        </div>
+      </div>
+
+      <div className="nexa-float-node nexa-node-schedule">
+        <span className="nexa-node-icon">◷</span>
+        <div>
+          <small>TRIGGER</small>
+          <strong>Schedule</strong>
+          <p>Run on time</p>
+        </div>
+      </div>
+
+      <div className="nexa-art-note">
+        Your workflow engine
+        <br />
+        always observable
+        <span>↙</span>
       </div>
     </div>
   )
@@ -120,263 +158,241 @@ function DeveloperFolder() {
 
 function LandingPage() {
   return (
-    <div className="nex-landing">
-      <div className="nex-noise" aria-hidden="true" />
+    <div className="nexa-page">
+      <div className="nexa-bg-orb nexa-bg-orb-one" />
+      <div className="nexa-bg-orb nexa-bg-orb-two" />
 
-      <nav className="nex-nav">
-        <a className="nex-brand" href="/">
-          <span className="nex-brand-mark" aria-hidden="true">
-            <i />
-            <i />
-          </span>
-          <span>NexFlow</span>
-        </a>
+      <header className="nexa-header">
+        <nav className="nexa-nav">
+          <a className="nexa-brand" href="/">
+            <BrandMark />
+            <span>NexFlow</span>
+          </a>
 
-        <div className="nex-nav-links">
-          <a href="#product">Product</a>
-          <a href="#architecture">Architecture</a>
-          <a href="#reliability">Reliability</a>
-          <a href="#developer">Developer</a>
-        </div>
+          <div className="nexa-nav-links">
+            <a href="#product">Product</a>
+            <a href="#features">Features</a>
+            <a href="#integrations">Integrations</a>
+            <a href="#plans">Plans</a>
+            <a href="#faq">FAQ</a>
+          </div>
 
-        <div className="nex-nav-actions">
-          <Link className="nex-text-link" to="/login">
-            Sign in
-          </Link>
-          <Link className="nex-nav-cta" to="/dashboard">
-            Open workspace
-          </Link>
-        </div>
-      </nav>
+          <div className="nexa-nav-actions">
+            <Link className="nexa-nav-signin" to="/login">
+              Sign in
+            </Link>
+            <Link className="nexa-button nexa-button-sm nexa-button-primary" to="/dashboard">
+              Open workspace <span>→</span>
+            </Link>
+          </div>
+        </nav>
+      </header>
 
       <main>
-        <section className="nex-hero" id="product">
-          <div className="nex-hero-copy">
-            <div className="nex-kicker">
-              <span className="nex-kicker-light" />
-              Workflow infrastructure, made visible
+        <section className="nexa-hero" id="product">
+          <div className="nexa-hero-copy">
+            <div className="nexa-pill">
+              <span className="nexa-pill-dot" />
+              VISUAL AUTOMATION FOR REAL WORK
             </div>
 
             <h1>
-              Build the flow.
-              <br />
-              <span>See everything move.</span>
+              Automate work.
+              <span>Multiply what&apos;s possible.</span>
             </h1>
 
-            <p className="nex-hero-lede">
-              NexFlow is a visual automation engine for designing, scheduling,
-              running, and recovering real workflows without hiding the system
-              behind a black box.
+            <p>
+              NexFlow gives you a visual way to design, run, schedule, monitor,
+              and recover real backend workflows — from one reliable workspace.
             </p>
 
-            <div className="nex-hero-actions">
-              <Link className="nex-primary-cta" to="/workspace">
-                Build a workflow
-                <span>↗</span>
+            <div className="nexa-hero-actions">
+              <Link className="nexa-button nexa-button-primary" to="/workspace">
+                Start building free <span>→</span>
               </Link>
-              <a className="nex-secondary-cta" href={githubUrl} target="_blank" rel="noreferrer">
+              <a className="nexa-button nexa-button-ghost" href={githubUrl} target="_blank" rel="noreferrer">
+                <span className="nexa-play">⌘</span>
                 View source
               </a>
             </div>
 
-            <div className="nex-stack-row" aria-label="Core technology">
-              <span>React</span>
-              <span>NestJS</span>
-              <span>PostgreSQL</span>
-              <span>Redis</span>
-              <span>BullMQ</span>
+            <div className="nexa-proof-row">
+              <span>✓ No credit card</span>
+              <span>✓ Real backend</span>
+              <span>✓ Open source</span>
             </div>
           </div>
 
-          <div className="nex-hero-visual">
-            <div className="nex-orbit nex-orbit-one" />
-            <div className="nex-orbit nex-orbit-two" />
-            <WorkflowPreview />
-            <div className="nex-float-card nex-float-card-top">
-              <span className="nex-float-label">QUEUE</span>
-              <strong>03 waiting</strong>
-            </div>
-            <div className="nex-float-card nex-float-card-bottom">
-              <span className="nex-pulse-dot" />
-              worker healthy
-            </div>
+          <div className="nexa-hero-visual">
+            <HeroAutomation />
           </div>
         </section>
 
-        <section className="nex-signal-strip" aria-label="NexFlow capabilities">
-          <div>
-            <span>01</span>
-            <strong>Visual DAG engine</strong>
-          </div>
-          <div>
-            <span>02</span>
-            <strong>Live execution</strong>
-          </div>
-          <div>
-            <span>03</span>
-            <strong>Crash recovery</strong>
-          </div>
-          <div>
-            <span>04</span>
-            <strong>Scheduled runs</strong>
-          </div>
-          <div className="nex-signal-status">
-            <i />
-            system ready
+        <section className="nexa-trust-strip">
+          <p>BUILT WITH A MODERN FULL-STACK TOOLCHAIN</p>
+          <div className="nexa-trust-logos">
+            {stack.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
           </div>
         </section>
 
-        <section className="nex-section nex-architecture" id="architecture">
-          <div className="nex-section-copy">
-            <span className="nex-section-index">01 / ARCHITECTURE</span>
-            <h2>Not a mock automation UI. A working execution system.</h2>
+        <section className="nexa-section" id="features">
+          <div className="nexa-section-heading nexa-centered">
+            <div className="nexa-pill nexa-pill-subtle">WHY NEXFLOW</div>
+            <h2>From repetitive work to reliable automation</h2>
+            <p>Everything needed to build and observe workflows without hiding what the system is doing.</p>
+          </div>
+
+          <div className="nexa-feature-grid">
+            {capabilities.map((feature) => (
+              <article className="nexa-feature-card" key={feature.title}>
+                <span className="nexa-feature-icon">{feature.icon}</span>
+                <h3>{feature.title}</h3>
+                <p>{feature.body}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="nexa-section nexa-integrations" id="integrations">
+          <div className="nexa-integrations-copy">
+            <div className="nexa-pill nexa-pill-subtle">CONNECT YOUR FLOW</div>
+            <h2>Works where your workflow works</h2>
             <p>
-              The canvas is only the front door. Every saved workflow is versioned,
-              queued, executed, observed, and recorded through a real backend.
+              Trigger from HTTP, schedule jobs, branch logic, persist state,
+              stream execution updates, and run background work through one engine.
             </p>
+            <Link className="nexa-outline-link" to="/workspace">
+              Open the builder <span>→</span>
+            </Link>
           </div>
 
-          <div className="nex-system-map">
-            <div className="nex-system-column">
-              <span className="nex-system-label">CLIENT</span>
-              <div className="nex-system-card">
-                <strong>React workspace</strong>
-                <small>Visual graph + live status</small>
+          <div className="nexa-integration-grid">
+            {integrations.map(([icon, label]) => (
+              <div className="nexa-integration-card" key={label}>
+                <span>{icon}</span>
+                <strong>{label}</strong>
               </div>
-            </div>
-
-            <div className="nex-system-arrow">→</div>
-
-            <div className="nex-system-column">
-              <span className="nex-system-label">CONTROL</span>
-              <div className="nex-system-card">
-                <strong>NestJS API</strong>
-                <small>Auth · webhooks · schedules</small>
-              </div>
-            </div>
-
-            <div className="nex-system-arrow">→</div>
-
-            <div className="nex-system-column">
-              <span className="nex-system-label">RUNTIME</span>
-              <div className="nex-system-card">
-                <strong>BullMQ worker</strong>
-                <small>Retries · leases · recovery</small>
-              </div>
-            </div>
-
-            <div className="nex-system-storage">
-              <div>
-                <span>PostgreSQL</span>
-                <small>durable state</small>
-              </div>
-              <div>
-                <span>Redis</span>
-                <small>job delivery</small>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
 
-        <section className="nex-section nex-reliability" id="reliability">
-          <div className="nex-reliability-panel">
-            <div className="nex-terminal-head">
-              <span>execution/recovery.log</span>
-              <span>● ● ●</span>
-            </div>
-            <div className="nex-terminal-lines">
-              <p><span>12:41:08</span> HTTP action checkpoint committed</p>
-              <p><span>12:41:13</span> worker heartbeat updated</p>
-              <p><span>12:41:44</span> stale lease detected</p>
-              <p><span>12:41:44</span> persisted response found — safe to recover</p>
-              <p className="nex-terminal-success"><span>12:41:45</span> execution resumed without resend ✓</p>
-            </div>
+        <section className="nexa-section nexa-plans" id="plans">
+          <div className="nexa-section-heading nexa-centered">
+            <div className="nexa-pill nexa-pill-subtle">SIMPLE BY DESIGN</div>
+            <h2>Run NexFlow your way</h2>
+            <p>The project is open source and designed to stay understandable from local development to production.</p>
           </div>
 
-          <div className="nex-section-copy nex-reliability-copy">
-            <span className="nex-section-index">02 / RELIABILITY</span>
-            <h2>Failure is part of the workflow.</h2>
-            <p>
-              NexFlow persists external-action checkpoints, fences workers with
-              leases, and avoids blindly repeating uncertain side effects after a
-              crash.
-            </p>
-            <div className="nex-proof-grid">
-              <div>
-                <strong>3×</strong>
-                <span>automatic attempts</span>
-              </div>
-              <div>
-                <strong>5s</strong>
-                <span>worker heartbeat</span>
-              </div>
-              <div>
-                <strong>0</strong>
-                <span>blind stalled replays</span>
-              </div>
-            </div>
+          <div className="nexa-plan-grid">
+            <article className="nexa-plan-card">
+              <span className="nexa-plan-name">Local</span>
+              <p>For building and testing workflows on your own machine.</p>
+              <div className="nexa-price">$0 <small>/ open source</small></div>
+              <ul>
+                <li>✓ Visual workflow builder</li>
+                <li>✓ Manual execution</li>
+                <li>✓ Webhook triggers</li>
+                <li>✓ PostgreSQL history</li>
+              </ul>
+              <Link className="nexa-plan-button" to="/workspace">Start building</Link>
+            </article>
+
+            <article className="nexa-plan-card nexa-plan-card-featured">
+              <span className="nexa-plan-badge">FULL STACK</span>
+              <span className="nexa-plan-name">Self-hosted</span>
+              <p>For running the full API, database, Redis queue, scheduler, and worker.</p>
+              <div className="nexa-price">$0 <small>/ your infrastructure</small></div>
+              <ul>
+                <li>✓ BullMQ background worker</li>
+                <li>✓ Automatic retries</li>
+                <li>✓ Crash reconciliation</li>
+                <li>✓ Scheduled workflows</li>
+                <li>✓ User authentication</li>
+              </ul>
+              <a className="nexa-plan-button nexa-plan-button-primary" href={githubUrl} target="_blank" rel="noreferrer">
+                View repository
+              </a>
+            </article>
+
+            <article className="nexa-plan-card">
+              <span className="nexa-plan-name">Production</span>
+              <p>For deployment behind a real domain with managed PostgreSQL and Redis.</p>
+              <div className="nexa-price">Custom <small>deployment</small></div>
+              <ul>
+                <li>✓ API + separate worker</li>
+                <li>✓ Durable persistence</li>
+                <li>✓ Health endpoint</li>
+                <li>✓ Deployment guide</li>
+              </ul>
+              <a className="nexa-plan-button" href={githubUrl} target="_blank" rel="noreferrer">Read deployment docs</a>
+            </article>
           </div>
         </section>
 
-        <section className="nex-section nex-developer" id="developer">
-          <div className="nex-developer-copy">
-            <span className="nex-section-index">03 / DEVELOPER</span>
-            <h2>The person behind the system.</h2>
-            <p>
-              NexFlow was designed and built end-to-end by Anna Patricia B. Vida,
-              from the visual editor and API to queue reliability, persistence,
-              authentication, and recovery behavior.
-            </p>
-
-            <div className="nex-dev-details">
-              <div>
-                <span>FOCUS</span>
-                <strong>Full-stack systems</strong>
-              </div>
-              <div>
-                <span>PROJECT</span>
-                <strong>NexFlow v1.0.0</strong>
-              </div>
-              <div>
-                <span>STATUS</span>
-                <strong className="nex-available">Portfolio release</strong>
-              </div>
-            </div>
-
-            <a className="nex-profile-link" href={profileUrl} target="_blank" rel="noreferrer">
-              Open developer profile
+        <section className="nexa-section nexa-faq-section" id="faq">
+          <div className="nexa-faq-copy">
+            <div className="nexa-pill nexa-pill-subtle">COMMON QUESTIONS</div>
+            <h2>Frequently asked questions</h2>
+            <p>Everything you need to know about how NexFlow works.</p>
+            <div className="nexa-hand-note">
+              Built to be understood,
+              <br />
+              not treated like magic.
               <span>↗</span>
+            </div>
+          </div>
+
+          <div className="nexa-faq-list">
+            {faq.map(([question, answer]) => (
+              <details className="nexa-faq-item" key={question}>
+                <summary>
+                  <span>{question}</span>
+                  <i>+</i>
+                </summary>
+                <p>{answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="nexa-final-cta">
+          <div className="nexa-final-wave nexa-final-wave-one" />
+          <div className="nexa-final-wave nexa-final-wave-two" />
+          <BrandMark />
+          <span className="nexa-final-kicker">READY TO BUILD A BETTER WORKFLOW?</span>
+          <h2>
+            Let NexFlow handle the execution.
+            <br />
+            You focus on the system.
+          </h2>
+          <div className="nexa-final-actions">
+            <Link className="nexa-button nexa-button-primary" to="/workspace">
+              Start building free <span>→</span>
+            </Link>
+            <a className="nexa-button nexa-button-ghost" href={profileUrl} target="_blank" rel="noreferrer">
+              Developer profile
             </a>
           </div>
-
-          <DeveloperFolder />
-        </section>
-
-        <section className="nex-final-cta">
-          <div>
-            <span className="nex-section-index">READY WHEN YOU ARE</span>
-            <h2>Turn a process into a workflow.</h2>
-          </div>
-          <Link className="nex-primary-cta" to="/workspace">
-            Open NexFlow
-            <span>→</span>
-          </Link>
         </section>
       </main>
 
-      <footer className="nex-footer">
-        <a className="nex-brand" href="/">
-          <span className="nex-brand-mark" aria-hidden="true">
-            <i />
-            <i />
-          </span>
+      <footer className="nexa-footer">
+        <a className="nexa-brand" href="/">
+          <BrandMark />
           <span>NexFlow</span>
         </a>
-        <p>Visual workflow infrastructure built from the ground up.</p>
-        <div className="nex-footer-links">
+        <div className="nexa-footer-links">
+          <a href="#product">Product</a>
+          <a href="#features">Features</a>
+          <a href="#integrations">Integrations</a>
+          <a href="#plans">Plans</a>
+          <a href="#faq">FAQ</a>
+        </div>
+        <div className="nexa-footer-meta">
           <a href={githubUrl} target="_blank" rel="noreferrer">GitHub</a>
-          <a href="#developer">Developer</a>
-          <span>© 2026</span>
+          <span>© 2026 NexFlow</span>
         </div>
       </footer>
     </div>
