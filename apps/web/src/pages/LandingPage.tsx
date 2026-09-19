@@ -174,6 +174,7 @@ function LandingPage() {
             <a href="#features">Features</a>
             <a href="#integrations">Integrations</a>
             <a href="#plans">Plans</a>
+            <a href="#developer">Developer</a>
             <a href="#faq">FAQ</a>
           </div>
 
@@ -331,6 +332,93 @@ function LandingPage() {
           </div>
         </section>
 
+
+        <section className="nexa-section nexa-developer" id="developer">
+          <div className="nexa-developer-copy">
+            <div className="nexa-pill nexa-pill-subtle">DEVELOPER</div>
+            <h2>Built end-to-end by Anna Patricia B. Vida</h2>
+            <p>
+              NexFlow was designed and implemented as a full-stack portfolio project,
+              covering the visual workflow editor, backend execution engine,
+              authentication, persistence, queue processing, scheduling, retries,
+              idempotency, and crash recovery.
+            </p>
+
+            <div className="nexa-developer-meta">
+              <div>
+                <span>ROLE</span>
+                <strong>Full-stack Developer</strong>
+              </div>
+              <div>
+                <span>PROJECT</span>
+                <strong>NexFlow v1.0.0</strong>
+              </div>
+              <div>
+                <span>STACK</span>
+                <strong>React · NestJS · PostgreSQL</strong>
+              </div>
+            </div>
+
+            <div className="nexa-developer-actions">
+              <a
+                className="nexa-button nexa-button-primary"
+                href={profileUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View developer profile <span>→</span>
+              </a>
+
+              <a
+                className="nexa-button nexa-button-ghost"
+                href={githubUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View NexFlow source
+              </a>
+            </div>
+          </div>
+
+          <div className="nexa-developer-card">
+            <div className="nexa-dev-orbit nexa-dev-orbit-one" />
+            <div className="nexa-dev-orbit nexa-dev-orbit-two" />
+
+            <div className="nexa-dev-folder">
+              <div className="nexa-dev-folder-back">
+                <span>DEVELOPER</span>
+              </div>
+
+              <div className="nexa-dev-paper nexa-dev-paper-back">
+                <span>PROFILE / 2026</span>
+                <strong>Systems & workflow automation</strong>
+                <small>Reliability · backend · product UI</small>
+              </div>
+
+              <div className="nexa-dev-paper nexa-dev-paper-front">
+                <span className="nexa-dev-kicker">ANNA PATRICIA B. VIDA</span>
+                <h3>Full-stack developer</h3>
+                <p>
+                  Building practical software with a focus on backend systems,
+                  data, and polished product experiences.
+                </p>
+
+                <div className="nexa-dev-tags">
+                  <span>React</span>
+                  <span>NestJS</span>
+                  <span>PostgreSQL</span>
+                  <span>Redis</span>
+                </div>
+              </div>
+
+              <div className="nexa-dev-folder-front">
+                <span>NEXFLOW / DEV</span>
+                <strong>AV</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="nexa-section nexa-faq-section" id="faq">
           <div className="nexa-faq-copy">
             <div className="nexa-pill nexa-pill-subtle">COMMON QUESTIONS</div>
@@ -388,6 +476,7 @@ function LandingPage() {
           <a href="#features">Features</a>
           <a href="#integrations">Integrations</a>
           <a href="#plans">Plans</a>
+          <a href="#developer">Developer</a>
           <a href="#faq">FAQ</a>
         </div>
         <div className="nexa-footer-meta">
