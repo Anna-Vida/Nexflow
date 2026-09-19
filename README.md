@@ -93,11 +93,11 @@ service returns
 future ticks resume normally
 ```
 
-Missed ticks are **not backfilled**.
+Missed ticks are **not backfilled**. Ticks already retained in Redis may execute late after a worker returns.
 
 Current overlap policy is **ALLOW**. If a workflow runs longer than its schedule interval, multiple executions may overlap.
 
-See `docs/scheduler-policy.md` for the full policy.
+See [the scheduler policy](docs/scheduler-policy.md) for the full policy.
 
 ## Authentication and ownership
 

@@ -121,7 +121,7 @@ Current scheduler behavior:
 - Overlapping scheduled executions are allowed.
 - Startup synchronization restores Redis scheduler registrations from PostgreSQL.
 
-See `scheduler-policy.md` for details.
+Ticks already retained in Redis may execute late after worker recovery; missed-tick backfill is separate from pending delivery. See [the scheduler policy](scheduler-policy.md) for details.
 
 ## Pre-deployment verification
 
