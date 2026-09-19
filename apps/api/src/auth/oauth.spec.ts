@@ -28,6 +28,6 @@ describe('OAuth state helpers', () => {
   })
 
   it('clears the provider state cookie', () => {
-    expect(clearOAuthStateCookie('github')).toContain('Max-Age=0')
+    expect(clearOAuthStateCookie('google')).toContain('Max-Age=0')
   })
 })
