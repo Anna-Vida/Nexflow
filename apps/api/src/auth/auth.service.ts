@@ -76,43 +76,25 @@ export class AuthService {
     const state = createOAuthState()
     const redirectUri = oauthRedirectUri(provider)
 
-    if (provider === 'google') {
-      const clientId = this.requiredOAuthEnv('GOOGLE_CLIENT_ID')
-      const params = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: 'openid email profile',
-        state,
-        prompt: 'select_account',
-        include_granted_scopes: 'true',
-      })
-
-      return {
-        state,
-        url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
-      }
-    }
-
-    const clientId = this.requiredOAuthEnv('GITHUB_CLIENT_ID')
+    const clientId = this.requiredOAuthEnv('GOOGLE_CLIENT_ID')
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
-      scope: 'user:email',
+      response_type: 'code',
+      scope: 'openid email profile',
       state,
-      allow_signup: 'true',
+      prompt: 'select_account',
+      include_granted_scopes: 'true',
     })
 
     return {
       state,
-      url: `https://github.com/login/oauth/authorize?${params.toString()}`,
+      url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
     }
   }
 
   async oauthLogin(provider: OAuthProvider, code: string) {
-    const identity = provider === 'google'
-      ? await this.googleIdentity(code)
-      : await this.githubIdentity(code)
+    const identity = await this.googleIdentity(code)
 
     return this.signInWithOAuth(
       provider,
@@ -166,81 +148,6 @@ export class AuthService {
       providerAccountId: profile.sub,
       email: profile.email.trim().toLowerCase(),
       name: typeof profile.name === 'string' ? profile.name : null,
-    }
-  }
-
-  private async githubIdentity(code: string) {
-    const clientId = this.requiredOAuthEnv('GITHUB_CLIENT_ID')
-    const clientSecret = this.requiredOAuthEnv('GITHUB_CLIENT_SECRET')
-
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        redirect_uri: oauthRedirectUri('github'),
-      }),
-    })
-
-    const tokenData: unknown = await tokenResponse.json().catch(() => null)
-    const accessToken = isRecord(tokenData) && typeof tokenData.access_token === 'string'
-      ? tokenData.access_token
-      : null
-
-    if (!tokenResponse.ok || !accessToken) {
-      throw new UnauthorizedException('GitHub sign-in could not be completed.')
-    }
-
-    const githubHeaders = {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${accessToken}`,
-      'User-Agent': 'NexFlow',
-    }
-
-    const [profileResponse, emailsResponse] = await Promise.all([
-      fetch('https://api.github.com/user', { headers: githubHeaders }),
-      fetch('https://api.github.com/user/emails', { headers: githubHeaders }),
-    ])
-
-    const profile: unknown = await profileResponse.json().catch(() => null)
-    const emails: unknown = await emailsResponse.json().catch(() => null)
-
-    if (
-      !profileResponse.ok
-      || !emailsResponse.ok
-      || !isRecord(profile)
-      || (typeof profile.id !== 'number' && typeof profile.id !== 'string')
-      || !Array.isArray(emails)
-    ) {
-      throw new UnauthorizedException('GitHub sign-in could not load your verified profile.')
-    }
-
-    const verifiedEmails = emails.filter((value): value is Record<string, unknown> => (
-      isRecord(value)
-      && value.verified === true
-      && typeof value.email === 'string'
-    ))
-
-    const primary = verifiedEmails.find((value) => value.primary === true) ?? verifiedEmails[0]
-    if (!primary || typeof primary.email !== 'string') {
-      throw new UnauthorizedException('GitHub did not provide a verified email address.')
-    }
-
-    const name = typeof profile.name === 'string' && profile.name.trim()
-      ? profile.name.trim()
-      : typeof profile.login === 'string'
-        ? profile.login
-        : null
-
-    return {
-      providerAccountId: String(profile.id),
-      email: primary.email.trim().toLowerCase(),
-      name,
     }
   }
 
