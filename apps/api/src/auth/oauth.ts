@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 
-export type OAuthProvider = 'google' | 'github'
+export type OAuthProvider = 'google'
 
 const stateLifetimeSeconds = 10 * 60
 
