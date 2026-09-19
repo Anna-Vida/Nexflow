@@ -166,3 +166,74 @@
   cursor: default;
   opacity: 0.6;
 }
+
+
+/* Red-noir auth theme ------------------------------------------------------ */
+.auth {
+  background:
+    radial-gradient(circle at 50% -15%, rgba(239, 35, 60, 0.16), transparent 30rem),
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px),
+    #050506;
+  background-size: auto, 48px 48px, 48px 48px, auto;
+}
+
+.auth-logo {
+  background: #ef233c;
+  box-shadow: 0 8px 26px rgba(239, 35, 60, 0.18);
+}
+
+.auth-card {
+  border-color: rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.025), transparent 35%),
+    rgba(10, 10, 12, 0.92);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(16px);
+}
+
+.auth-eyebrow {
+  color: #ef233c;
+}
+
+.auth-tab.active {
+  color: #fff;
+  background: rgba(239, 35, 60, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(239, 35, 60, 0.18);
+}
+
+.auth-form input:focus {
+  border-color: rgba(239, 35, 60, 0.7);
+  box-shadow: 0 0 0 3px rgba(239, 35, 60, 0.08);
+}
+
+.auth-submit {
+  border-color: #ef233c;
+  background: linear-gradient(180deg, #f12d44 0%, #d91f35 100%);
+  box-shadow:
+    0 12px 34px rgba(239, 35, 60, 0.16),
+    inset 0 1px rgba(255,255,255,0.12);
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.auth-submit:not(:disabled):hover {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #f63a50 0%, #e3233a 100%);
+  box-shadow:
+    0 15px 38px rgba(239, 35, 60, 0.22),
+    inset 0 1px rgba(255,255,255,0.14);
+}
+
+.auth-submit:not(:disabled):active {
+  transform: scale(0.99);
+}
+
+.auth-submit:focus-visible,
+.auth-tab:focus-visible,
+.auth-form input:focus-visible {
+  outline: 2px solid rgba(239, 35, 60, 0.45);
+  outline-offset: 3px;
+}
