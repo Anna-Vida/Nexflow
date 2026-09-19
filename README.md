@@ -1,7 +1,5 @@
 # NexFlow
 
-[![CI](https://github.com/Anna-Vida/Nexflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Anna-Vida/Nexflow/actions/workflows/ci.yml)
-
 **NexFlow** is a visual workflow automation engine built with React, NestJS, PostgreSQL, Redis, and BullMQ.
 
 It lets users design workflows as directed graphs, trigger them through webhooks or schedules, execute HTTP actions, inspect execution history, and recover safely from worker failures without blindly repeating uncertain external side effects.
