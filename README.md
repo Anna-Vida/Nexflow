@@ -4,7 +4,7 @@
 
 It lets users design workflows as directed graphs, trigger them through webhooks or schedules, execute HTTP actions, inspect execution history, and recover safely from worker failures without blindly repeating uncertain external side effects.
 
-> Status: active development. Authentication and workflow ownership are implemented; the next focus is CI, deployment, and production hardening.
+> Status: portfolio release candidate. Authentication, workflow ownership, reliability controls, scheduling, and CI are implemented; deployment readiness is documented.
 
 ## What NexFlow can do
 
@@ -169,6 +169,7 @@ Nexflow/
 │   ├── api/        # NestJS API, worker, Prisma schema, queues, tests
 │   └── web/        # React + Vite frontend
 ├── docs/
+│   ├── deployment.md
 │   └── scheduler-policy.md
 └── README.md
 ```
@@ -212,14 +213,9 @@ The Vite development server runs the NexFlow frontend locally.
 
 ## Environment
 
-The API expects local environment configuration such as:
+Copy `apps/api/.env.example` to `apps/api/.env` for local development, then provide your own PostgreSQL and Redis connection strings.
 
-```text
-DATABASE_URL=
-REDIS_URL=
-```
-
-Secrets and local `.env` files are not committed to the repository.
+Secrets and local `.env` files are not committed to the repository. See `docs/deployment.md` for the production topology and rollout checklist.
 
 ## Useful test commands
 
@@ -265,9 +261,8 @@ Completed major milestones include:
 
 Next areas:
 
-- CI automation
-- Deployment
-- Production configuration and observability
+- Deployment to a public environment
+- Production monitoring and observability
 - Additional trigger/action integrations
 - Optional AI-assisted workflow features
 
