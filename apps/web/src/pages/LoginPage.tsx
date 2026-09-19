@@ -93,52 +93,6 @@ function LoginPage() {
               </div>
             </div>
           </div>
-
-          <div className="auth-visual" aria-hidden="true">
-            <div className="auth-visual-grid" />
-            <div className="auth-visual-orbit auth-visual-orbit-one" />
-            <div className="auth-visual-orbit auth-visual-orbit-two" />
-
-            <div className="auth-visual-core">
-              <span>NF</span>
-            </div>
-
-            <div className="auth-visual-node auth-visual-node-one">
-              <i>↗</i>
-              <span>
-                <small>TRIGGER</small>
-                <strong>Webhook</strong>
-              </span>
-            </div>
-
-            <div className="auth-visual-node auth-visual-node-two">
-              <i>◇</i>
-              <span>
-                <small>LOGIC</small>
-                <strong>Condition</strong>
-              </span>
-            </div>
-
-            <div className="auth-visual-node auth-visual-node-three">
-              <i>⚡</i>
-              <span>
-                <small>ACTION</small>
-                <strong>HTTP request</strong>
-              </span>
-            </div>
-
-            <div className="auth-visual-line auth-visual-line-one" />
-            <div className="auth-visual-line auth-visual-line-two" />
-            <div className="auth-visual-line auth-visual-line-three" />
-
-            <div className="auth-status-card">
-              <span className="auth-status-dot" />
-              <div>
-                <small>WORKER STATUS</small>
-                <strong>Healthy · ready</strong>
-              </div>
-            </div>
-          </div>
         </aside>
 
         <main className="auth-main">
