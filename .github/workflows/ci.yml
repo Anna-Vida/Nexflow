@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build, lint, and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nexflow_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nexflow_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/nexflow_ci?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: npm ci
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Apply database migrations
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+
+      - name: API lint
+        working-directory: apps/api
+        run: npm run lint
+
+      - name: API unit tests
+        working-directory: apps/api
+        run: npm test
+
+      - name: API integration tests
+        working-directory: apps/api
+        run: npm run test:integration
+
+      - name: API E2E tests
+        working-directory: apps/api
+        run: npm run test:e2e
+
+      - name: API build
+        working-directory: apps/api
+        run: npm run build
+
+      - name: Webhook contract
+        working-directory: apps/api
+        run: npm run test:webhooks
+
+      - name: Scheduler contract
+        working-directory: apps/api
+        run: npm run test:schedules
+
+      - name: Crash recovery contract
+        working-directory: apps/api
+        run: npm run test:recovery
+
+      - name: Web lint
+        working-directory: apps/web
+        run: npm run lint
+
+      - name: Web build
+        working-directory: apps/web
+        run: npm run build
