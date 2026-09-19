@@ -251,6 +251,19 @@ function DashboardPage() {
               debug your NexFlow
               automations.
             </p>
+
+            <div className="dashboard-hero-meta">
+              <span>
+                <i />
+                {workflows.length} workflow{workflows.length === 1 ? '' : 's'}
+              </span>
+              <span>
+                {executions.length} recent run{executions.length === 1 ? '' : 's'}
+              </span>
+              <span>
+                PostgreSQL + BullMQ
+              </span>
+            </div>
           </div>
 
           <button
