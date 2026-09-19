@@ -1225,3 +1225,185 @@
     gap: 6px;
   }
 }
+
+
+/* Violet product theme ----------------------------------------------------- */
+.dashboard {
+  --nf-violet: #9b6dff;
+  --nf-violet-2: #c084fc;
+  --nf-panel: rgba(18, 12, 45, 0.78);
+  --nf-line: rgba(196, 163, 255, 0.14);
+  background:
+    radial-gradient(circle at 50% -10%, rgba(124, 58, 237, 0.32), transparent 34rem),
+    radial-gradient(circle at 90% 20%, rgba(192, 132, 252, 0.12), transparent 22rem),
+    linear-gradient(180deg, #0c0728 0%, #09051d 46%, #050313 100%);
+}
+
+.dashboard::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at 50% 10%, black 30%, transparent 78%);
+}
+
+.dashboard-nav {
+  top: 14px;
+  width: min(1180px, calc(100% - 32px));
+  height: 66px;
+  margin-top: 14px;
+  padding: 0 18px;
+  border: 1px solid var(--nf-line);
+  border-radius: 18px;
+  background: rgba(9, 6, 27, 0.72);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.24),
+    inset 0 1px rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px);
+}
+
+.dashboard-logo {
+  border-color: rgba(196, 163, 255, 0.36);
+  background: linear-gradient(135deg, #d68cff 0%, #9c67ff 48%, #6f36ee 100%);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.34);
+}
+
+.dashboard-nav-label {
+  border-color: rgba(196,163,255,0.1);
+  color: #877fa0;
+  background: rgba(255,255,255,0.025);
+}
+
+.dashboard-create-top,
+.dashboard-primary,
+.retry-button {
+  border-color: rgba(255,255,255,0.12);
+  background: linear-gradient(135deg, #d98cff 0%, #a367ff 48%, #7f3eff 100%);
+  box-shadow:
+    0 12px 34px rgba(124, 58, 237, 0.3),
+    inset 0 1px rgba(255,255,255,0.18);
+}
+
+.dashboard-create-top:hover,
+.dashboard-primary:hover,
+.retry-button:hover {
+  background: linear-gradient(135deg, #e09bff 0%, #ac72ff 48%, #8a4aff 100%);
+  box-shadow:
+    0 16px 40px rgba(124, 58, 237, 0.38),
+    inset 0 1px rgba(255,255,255,0.2);
+}
+
+.dashboard-signout {
+  border-color: rgba(196,163,255,0.13);
+  color: #c9c1e0;
+  background: rgba(255,255,255,0.035);
+}
+
+.dashboard-signout:hover {
+  border-color: rgba(196,163,255,0.28);
+  background: rgba(155,109,255,0.08);
+  box-shadow: 0 8px 24px rgba(124,58,237,0.08);
+}
+
+.dashboard-main {
+  width: min(1180px, calc(100% - 48px));
+}
+
+.dashboard-hero::after {
+  background: rgba(124,58,237,0.16);
+}
+
+.dashboard-eyebrow,
+.dashboard-section-header button,
+.execution-details-button,
+.execution-drawer-header span,
+.attempt-group h4 {
+  color: #b993ff;
+}
+
+.dashboard-eyebrow::before {
+  background: #c084fc;
+  box-shadow: 0 0 0 5px rgba(192,132,252,0.08);
+}
+
+.dashboard-hero h1 {
+  color: #fbf9ff;
+}
+
+.dashboard-hero p {
+  color: #9f96b9;
+}
+
+.dashboard-hero-meta span {
+  border-color: rgba(196,163,255,0.09);
+  color: #7f7795;
+  background: rgba(255,255,255,0.025);
+}
+
+.dashboard-section-header button {
+  border-color: rgba(196,163,255,0.18);
+  color: #c5adff;
+  background: rgba(155,109,255,0.06);
+}
+
+.dashboard-section-header button:hover {
+  color: white;
+  border-color: rgba(196,163,255,0.34);
+  background: rgba(155,109,255,0.11);
+}
+
+.workflow-card,
+.execution-table,
+.execution-summary > div,
+.execution-detail-section > p,
+.retry-lineage {
+  border-color: rgba(196,163,255,0.1);
+  background:
+    linear-gradient(180deg, rgba(93,58,160,0.12), rgba(255,255,255,0.012)),
+    rgba(13, 9, 34, 0.78);
+}
+
+.workflow-card:hover {
+  border-color: rgba(196,163,255,0.28);
+  background:
+    linear-gradient(180deg, rgba(112,68,190,0.2), rgba(255,255,255,0.02)),
+    rgba(15, 10, 39, 0.84);
+  box-shadow: 0 20px 50px rgba(28, 11, 70, 0.28);
+}
+
+.workflow-card-icon {
+  border-color: rgba(196,163,255,0.22);
+  color: #d5a2ff;
+  background: rgba(151,90,255,0.12);
+}
+
+.workflow-version {
+  border-color: rgba(196,163,255,0.08);
+}
+
+.execution-heading {
+  background: rgba(155,109,255,0.025);
+}
+
+.execution-details-button:hover,
+.retry-lineage {
+  color: #d0b5ff;
+}
+
+.status-badge.running,
+.event-dot.running {
+  color: #ceb6ff;
+  border-color: rgba(155,109,255,0.34);
+  background: rgba(155,109,255,0.1);
+}
+
+.execution-drawer {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(124,58,237,0.14), transparent 18rem),
+    #08051a;
+}
