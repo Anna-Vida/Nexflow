@@ -2198,3 +2198,212 @@ footer p {
     transition: none;
   }
 }
+
+
+/* Red-noir visual direction ------------------------------------------------ */
+.nex-landing {
+  --nex-red: #ef233c;
+  --nex-red-soft: rgba(239, 35, 60, 0.12);
+  --nex-red-border: rgba(239, 35, 60, 0.36);
+  background:
+    radial-gradient(circle at 50% -8%, rgba(239, 35, 60, 0.14), transparent 34rem),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    #050506;
+  background-size: auto, 40px 40px, 40px 40px, auto;
+}
+
+.nex-landing ::selection {
+  color: #fff;
+  background: var(--nex-red);
+}
+
+.nex-nav {
+  position: sticky;
+  top: 14px;
+  z-index: 50;
+  width: min(1120px, calc(100% - 32px));
+  height: 62px;
+  margin-top: 14px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(4, 4, 5, 0.72);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.26),
+    inset 0 1px rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(18px);
+}
+
+.nex-brand-mark {
+  border-color: rgba(239, 35, 60, 0.58);
+  background: var(--nex-red);
+  box-shadow: 0 8px 24px rgba(239, 35, 60, 0.2);
+  transform: rotate(45deg) scale(0.78);
+}
+
+.nex-brand-mark i {
+  background: #fff;
+  transform: rotate(-45deg);
+}
+
+.nex-brand-mark i:first-child {
+  transform: rotate(-45deg) translateY(-2px);
+}
+
+.nex-brand-mark i:last-child {
+  transform: rotate(-45deg) translateY(2px);
+}
+
+.nex-nav-cta {
+  border-color: rgba(239, 35, 60, 0.36);
+  border-radius: 999px;
+  background: rgba(239, 35, 60, 0.08);
+}
+
+.nex-nav-cta:hover {
+  border-color: rgba(239, 35, 60, 0.65);
+  background: rgba(239, 35, 60, 0.14);
+  box-shadow: 0 10px 30px rgba(239, 35, 60, 0.08);
+}
+
+.nex-kicker-light,
+.nex-flow-line span {
+  background: var(--nex-red);
+  box-shadow: 0 0 0 5px rgba(239, 35, 60, 0.08), 0 0 14px rgba(239, 35, 60, 0.45);
+}
+
+.nex-section-index {
+  color: #d45a68;
+}
+
+.nex-hero h1 span {
+  color: var(--nex-red);
+}
+
+.nex-primary-cta {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  border: 1px solid var(--nex-red);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, #f12d44 0%, #d91f35 100%);
+  box-shadow:
+    0 14px 42px rgba(239, 35, 60, 0.17),
+    inset 0 1px rgba(255,255,255,0.14);
+}
+
+.nex-primary-cta::after {
+  content: "";
+  position: absolute;
+  inset: -60% -30%;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255,255,255,0.15) 45%,
+    transparent 58%
+  );
+  transform: translateX(-55%);
+  transition: transform 500ms ease;
+}
+
+.nex-primary-cta:hover {
+  color: #fff;
+  background: linear-gradient(180deg, #f83a50 0%, #e3243a 100%);
+}
+
+.nex-primary-cta:hover::after {
+  transform: translateX(48%);
+}
+
+.nex-primary-cta > * ,
+.nex-primary-cta {
+  isolation: isolate;
+}
+
+.nex-secondary-cta {
+  border-radius: 999px;
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.025);
+}
+
+.nex-stack-row span {
+  border-color: rgba(239, 35, 60, 0.14);
+}
+
+.nex-hero::before {
+  background: rgba(239, 35, 60, 0.065);
+}
+
+.nex-live-chip span {
+  background: var(--nex-red);
+  box-shadow: 0 0 0 4px rgba(239, 35, 60, 0.08);
+}
+
+.nex-spinner {
+  border-top-color: var(--nex-red);
+}
+
+.nex-node-output-running {
+  color: #ff7a89;
+}
+
+.nex-execution-progress span {
+  background: var(--nex-red);
+}
+
+.nex-orbit-two {
+  border-color: rgba(239, 35, 60, 0.1);
+}
+
+.nex-signal-status i,
+.nex-pulse-dot {
+  background: #72d67d;
+  box-shadow: 0 0 0 4px rgba(114, 214, 125, 0.08);
+}
+
+.nex-system-map {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(239, 35, 60, 0.055), transparent 42%),
+    #0b0c0e;
+}
+
+.nex-profile-link:hover {
+  border-color: var(--nex-red);
+}
+
+.nex-folder-back {
+  border-color: #5a2931;
+  background: #251115;
+}
+
+.nex-folder-tab {
+  border-color: #5a2931;
+  color: #ff9ba7;
+  background: #251115;
+}
+
+.nex-folder-front {
+  border-color: #66303a;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.03), transparent 30%),
+    #35151a;
+}
+
+.nex-folder-front span {
+  color: #ff9aa6;
+}
+
+.nex-folder-front span:last-child {
+  border-color: rgba(239, 35, 60, 0.45);
+}
+
+@media (max-width: 700px) {
+  .nex-nav {
+    top: 8px;
+    width: calc(100% - 18px);
+    margin-top: 8px;
+    padding-inline: 13px;
+  }
+}
