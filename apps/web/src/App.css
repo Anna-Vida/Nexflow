@@ -2409,3 +2409,118 @@ footer p {
     padding-inline: 13px;
   }
 }
+
+
+/* Landing alignment pass --------------------------------------------------- */
+.nex-hero,
+.nex-signal-strip,
+.nex-section,
+.nex-final-cta,
+.nex-footer {
+  width: min(1120px, calc(100% - 48px));
+}
+
+.nex-hero {
+  min-height: 680px;
+  padding: 82px 0 88px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(500px, 1.1fr);
+  align-items: center;
+  gap: 58px;
+}
+
+.nex-hero-copy {
+  align-self: center;
+  max-width: 560px;
+}
+
+.nex-hero h1 {
+  max-width: 560px;
+  margin: 20px 0 24px;
+  font-size: clamp(56px, 5.4vw, 80px);
+  line-height: 0.96;
+  letter-spacing: -4.8px;
+}
+
+.nex-hero-lede {
+  max-width: 540px;
+}
+
+.nex-hero-visual {
+  min-height: 510px;
+  align-self: center;
+  justify-self: stretch;
+}
+
+.nex-workflow-shell {
+  width: min(100%, 600px);
+  height: 490px;
+}
+
+.nex-orbit-one {
+  width: 520px;
+  height: 520px;
+}
+
+.nex-orbit-two {
+  width: 380px;
+  height: 380px;
+}
+
+.nex-float-card-top {
+  right: -10px;
+  top: 70px;
+}
+
+.nex-float-card-bottom {
+  left: -18px;
+  bottom: 66px;
+}
+
+@media (max-width: 1060px) {
+  .nex-hero {
+    width: min(760px, calc(100% - 48px));
+    grid-template-columns: 1fr;
+    gap: 44px;
+    padding-top: 78px;
+  }
+
+  .nex-hero-copy {
+    max-width: 680px;
+  }
+
+  .nex-hero h1,
+  .nex-hero-lede {
+    max-width: 680px;
+  }
+
+  .nex-hero-visual {
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  .nex-hero,
+  .nex-signal-strip,
+  .nex-section,
+  .nex-final-cta,
+  .nex-footer {
+    width: min(100% - 30px, 1120px);
+  }
+
+  .nex-hero {
+    padding: 64px 0 54px;
+  }
+
+  .nex-hero h1 {
+    font-size: clamp(46px, 14vw, 66px);
+    letter-spacing: -3.4px;
+  }
+
+  .nex-hero-visual {
+    min-height: 420px;
+  }
+
+  .nex-workflow-shell {
+    height: 410px;
+  }
+}
