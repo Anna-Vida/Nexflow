@@ -1,6 +1,6 @@
 # OAuth login setup
 
-NexFlow supports Google and GitHub OAuth 2.0 login in addition to email/password authentication.
+NexFlow supports Google OAuth 2.0 login in addition to email/password authentication.
 
 OAuth users are linked to the same NexFlow `User` and `Session` models used by password login. Provider access tokens are used only to read the verified identity during sign-in and are **not** persisted.
 
@@ -31,8 +31,6 @@ API_ORIGIN="http://localhost:3000"
 GOOGLE_CLIENT_ID="..."
 GOOGLE_CLIENT_SECRET=""
 
-GITHUB_CLIENT_ID="..."
-GITHUB_CLIENT_SECRET=""
 ```
 
 Never commit the client secrets.
@@ -62,35 +60,6 @@ openid email profile
 
 Google login is accepted only when the returned profile includes a verified email address.
 
-## GitHub
-
-Create a GitHub **OAuth App**.
-
-For local development:
-
-```text
-Homepage URL:
-http://localhost:5173
-
-Authorization callback URL:
-http://localhost:3000/api/auth/oauth/github/callback
-```
-
-Copy the OAuth App credentials into:
-
-```text
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-```
-
-NexFlow requests:
-
-```text
-user:email
-```
-
-The backend uses GitHub's authenticated user and email APIs and accepts only a verified email address.
-
 ## Database migration
 
 After pulling the OAuth implementation:
@@ -107,7 +76,7 @@ The migration:
 - adds `OAuthAccount`
 - uniquely links provider identities to NexFlow users
 
-If a verified Google or GitHub email matches an existing password account, the OAuth identity is linked to that existing NexFlow user rather than creating a duplicate user.
+If a verified Google email matches an existing password account, the OAuth identity is linked to that existing NexFlow user rather than creating a duplicate user.
 
 ## Start NexFlow
 
@@ -131,7 +100,7 @@ Then open:
 http://localhost:5173/login
 ```
 
-Use **Continue with Google** or **Continue with GitHub**.
+Use **Continue with Google**.
 
 Successful OAuth login redirects to:
 
@@ -141,7 +110,7 @@ http://localhost:5173/dashboard
 
 ## Production
 
-For production, update both provider configurations to the deployed HTTPS callback URLs and set:
+For production, update the Google OAuth client to use the deployed HTTPS callback URL and set:
 
 ```text
 WEB_ORIGIN="https://your-nexflow-domain.example"
