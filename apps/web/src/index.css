@@ -23,6 +23,17 @@ body {
   min-height: 100vh;
 }
 
+/* Hide the page scrollbar while preserving wheel, touch, and keyboard scrolling. */
+html,
+body {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
 .session-gate {
   min-height: 100vh;
   display: flex;

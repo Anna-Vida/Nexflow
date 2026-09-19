@@ -240,7 +240,7 @@ body {
   width: min(1180px, calc(100% - 48px));
   min-height: 680px;
   margin: 0 auto;
-  padding: 86px 0 70px;
+  padding: 44px 0 70px;
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(520px, 1.08fr);
   align-items: center;
@@ -1152,7 +1152,7 @@ body {
   .nexa-hero {
     grid-template-columns: 1fr;
     gap: 30px;
-    padding-top: 70px;
+    padding-top: 44px;
   }
 
   .nexa-hero-copy {
@@ -1227,7 +1227,7 @@ body {
 
   .nexa-hero {
     min-height: auto;
-    padding: 62px 0 50px;
+    padding: 36px 0 50px;
   }
 
   .nexa-hero h1 {
