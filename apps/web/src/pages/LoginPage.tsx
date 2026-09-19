@@ -14,23 +14,11 @@ function GoogleIcon() {
   )
 }
 
-function GitHubIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 .7a11.3 11.3 0 0 0-3.57 22.02c.57.1.78-.25.78-.55v-2.18c-3.18.69-3.85-1.35-3.85-1.35-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.73-1.53-2.54-.29-5.21-1.27-5.21-5.59 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.44.11-3 0 0 .96-.31 3.12 1.16A10.8 10.8 0 0 1 12 6.02c.96 0 1.92.13 2.82.38 2.16-1.47 3.11-1.16 3.11-1.16.63 1.56.23 2.71.12 3 .73.79 1.17 1.8 1.17 3.04 0 4.33-2.68 5.29-5.23 5.58.41.35.78 1.05.78 2.12v3.19c0 .3.2.66.79.55A11.3 11.3 0 0 0 12 .7Z"
-      />
-    </svg>
-  )
-}
-
 function oauthMessage(value: string | null) {
   if (!value) return null
   if (value === 'access_denied') return 'OAuth sign-in was cancelled.'
   if (value === 'invalid_state') return 'The sign-in request expired. Please try again.'
   if (value === 'google_not_configured') return 'Google sign-in is not configured yet.'
-  if (value === 'github_not_configured') return 'GitHub sign-in is not configured yet.'
   return 'OAuth sign-in could not be completed. Please try again.'
 }
 
@@ -74,9 +62,9 @@ function LoginPage() {
     }
   }
 
-  function startOAuth(provider: 'google' | 'github') {
+  function startGoogleOAuth() {
     setError(null)
-    window.location.assign(`/api/auth/oauth/${provider}`)
+    window.location.assign('/api/auth/oauth/google')
   }
 
   return (
@@ -164,23 +152,12 @@ function LoginPage() {
               <button
                 type="button"
                 className="auth-oauth-button"
-                onClick={() => startOAuth('google')}
+                onClick={startGoogleOAuth}
               >
                 <span className="auth-provider-icon auth-google-icon">
                   <GoogleIcon />
                 </span>
                 Continue with Google
-              </button>
-
-              <button
-                type="button"
-                className="auth-oauth-button"
-                onClick={() => startOAuth('github')}
-              >
-                <span className="auth-provider-icon auth-github-icon">
-                  <GitHubIcon />
-                </span>
-                Continue with GitHub
               </button>
             </div>
 
