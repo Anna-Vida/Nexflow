@@ -1,16 +1,46 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { getSessionUser, logInRemote, signUpRemote } from '../workflow/authApi'
 import './LoginPage.css'
 
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.38Z" />
+      <path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.39l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.12H3.05v2.59A10 10 0 0 0 12 22Z" />
+      <path fill="#FBBC05" d="M6.4 13.94A6 6 0 0 1 6.08 12c0-.67.12-1.33.32-1.94V7.47H3.05A10 10 0 0 0 2 12c0 1.61.38 3.13 1.05 4.53l3.35-2.59Z" />
+      <path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.95 5.47l3.35 2.59C7.19 7.7 9.4 5.94 12 5.94Z" />
+    </svg>
+  )
+}
+
+function GitHubIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M12 .7a11.3 11.3 0 0 0-3.57 22.02c.57.1.78-.25.78-.55v-2.18c-3.18.69-3.85-1.35-3.85-1.35-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.73-1.53-2.54-.29-5.21-1.27-5.21-5.59 0-1.24.44-2.25 1.17-3.04-.12-.29-.51-1.44.11-3 0 0 .96-.31 3.12 1.16A10.8 10.8 0 0 1 12 6.02c.96 0 1.92.13 2.82.38 2.16-1.47 3.11-1.16 3.11-1.16.63 1.56.23 2.71.12 3 .73.79 1.17 1.8 1.17 3.04 0 4.33-2.68 5.29-5.23 5.58.41.35.78 1.05.78 2.12v3.19c0 .3.2.66.79.55A11.3 11.3 0 0 0 12 .7Z"
+      />
+    </svg>
+  )
+}
+
+function oauthMessage(value: string | null) {
+  if (!value) return null
+  if (value === 'access_denied') return 'OAuth sign-in was cancelled.'
+  if (value === 'invalid_state') return 'The sign-in request expired. Please try again.'
+  return 'OAuth sign-in could not be completed. Please try again.'
+}
+
 function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(oauthMessage(searchParams.get('oauth')))
 
   useEffect(() => {
     let active = true
@@ -40,6 +70,11 @@ function LoginPage() {
     } finally {
       setPending(false)
     }
+  }
+
+  function startOAuth(provider: 'google' | 'github') {
+    setError(null)
+    window.location.assign(`/api/auth/oauth/${provider}`)
   }
 
   return (
@@ -122,6 +157,36 @@ function LoginPage() {
                 ? 'Continue where you left off and access your workflows, executions, and schedules.'
                 : 'Create your account to save workflows, monitor executions, and manage automation securely.'}
             </p>
+
+            <div className="auth-oauth-grid">
+              <button
+                type="button"
+                className="auth-oauth-button"
+                onClick={() => startOAuth('google')}
+              >
+                <span className="auth-provider-icon auth-google-icon">
+                  <GoogleIcon />
+                </span>
+                Continue with Google
+              </button>
+
+              <button
+                type="button"
+                className="auth-oauth-button"
+                onClick={() => startOAuth('github')}
+              >
+                <span className="auth-provider-icon auth-github-icon">
+                  <GitHubIcon />
+                </span>
+                Continue with GitHub
+              </button>
+            </div>
+
+            <div className="auth-divider">
+              <span />
+              <small>OR CONTINUE WITH EMAIL</small>
+              <span />
+            </div>
 
             <div className="auth-tabs">
               <button
@@ -220,6 +285,8 @@ function LoginPage() {
               <span>HttpOnly session cookie</span>
               <span>•</span>
               <span>scrypt password hashing</span>
+              <span>•</span>
+              <span>OAuth 2.0</span>
             </div>
           </section>
         </main>
