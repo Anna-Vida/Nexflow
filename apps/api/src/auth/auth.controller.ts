@@ -1,9 +1,21 @@
-import { BadRequestException, Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common'
 import type { Request, Response } from 'express'
 import { z } from 'zod'
 import { AuthGuard, type AuthenticatedRequest } from './auth.guard.js'
 import { AuthService } from './auth.service.js'
 import { CurrentUser } from './current-user.decorator.js'
+import type { OAuthProvider } from './oauth.js'
 
 const credentialsSchema = z.object({
   email: z.email().max(254),
@@ -19,7 +31,10 @@ export class AuthController {
   @HttpCode(201)
   async register(@Body() body: unknown, @Res({ passthrough: true }) response: Response) {
     const parsed = credentialsSchema.safeParse(body)
-    if (!parsed.success) throw new BadRequestException('Enter a valid email, name, and a password of at least 12 characters.')
+    if (!parsed.success) {
+      throw new BadRequestException('Enter a valid email, name, and a password of at least 12 characters.')
+    }
+
     const result = await this.auth.signup(parsed.data.email, parsed.data.password, parsed.data.name)
     response.setHeader('Set-Cookie', this.auth.getSessionCookie(result.token))
     return result.user
@@ -30,9 +45,42 @@ export class AuthController {
   async login(@Body() body: unknown, @Res({ passthrough: true }) response: Response) {
     const parsed = credentialsSchema.safeParse(body)
     if (!parsed.success) throw new BadRequestException('Invalid email or password.')
+
     const result = await this.auth.login(parsed.data.email, parsed.data.password)
     response.setHeader('Set-Cookie', this.auth.getSessionCookie(result.token))
     return result.user
+  }
+
+  @Get('oauth/google')
+  google(@Res() response: Response) {
+    return this.beginOAuth('google', response)
+  }
+
+  @Get('oauth/github')
+  github(@Res() response: Response) {
+    return this.beginOAuth('github', response)
+  }
+
+  @Get('oauth/google/callback')
+  googleCallback(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Query('error') error: string | undefined,
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    return this.completeOAuth('google', code, state, error, request, response)
+  }
+
+  @Get('oauth/github/callback')
+  githubCallback(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Query('error') error: string | undefined,
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    return this.completeOAuth('github', code, state, error, request, response)
   }
 
   @Post('logout')
@@ -46,5 +94,53 @@ export class AuthController {
   @UseGuards(AuthGuard)
   me(@CurrentUser() user: AuthenticatedRequest['user']) {
     return user
+  }
+
+  private beginOAuth(provider: OAuthProvider, response: Response) {
+    const authorization = this.auth.oauthAuthorization(provider)
+
+    response.setHeader(
+      'Set-Cookie',
+      this.auth.getOAuthStateCookie(provider, authorization.state),
+    )
+
+    return response.redirect(authorization.url)
+  }
+
+  private async completeOAuth(
+    provider: OAuthProvider,
+    code: string | undefined,
+    state: string | undefined,
+    providerError: string | undefined,
+    request: Request,
+    response: Response,
+  ) {
+    const clearState = this.auth.getClearOAuthStateCookie(provider)
+    const loginUrl = `${this.auth.getWebOrigin()}/login`
+
+    if (
+      providerError
+      || !code
+      || !this.auth.validOAuthState(provider, request.headers.cookie, state)
+    ) {
+      response.setHeader('Set-Cookie', clearState)
+      return response.redirect(
+        `${loginUrl}?oauth=${encodeURIComponent(providerError ?? 'invalid_state')}`,
+      )
+    }
+
+    try {
+      const result = await this.auth.oauthLogin(provider, code)
+
+      response.setHeader('Set-Cookie', [
+        clearState,
+        this.auth.getSessionCookie(result.token),
+      ])
+
+      return response.redirect(`${this.auth.getWebOrigin()}/dashboard`)
+    } catch {
+      response.setHeader('Set-Cookie', clearState)
+      return response.redirect(`${loginUrl}?oauth=failed`)
+    }
   }
 }
