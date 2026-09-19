@@ -56,11 +56,6 @@ export class AuthController {
     return this.beginOAuth('google', response)
   }
 
-  @Get('oauth/github')
-  github(@Res() response: Response) {
-    return this.beginOAuth('github', response)
-  }
-
   @Get('oauth/google/callback')
   googleCallback(
     @Query('code') code: string | undefined,
@@ -70,17 +65,6 @@ export class AuthController {
     @Res() response: Response,
   ) {
     return this.completeOAuth('google', code, state, error, request, response)
-  }
-
-  @Get('oauth/github/callback')
-  githubCallback(
-    @Query('code') code: string | undefined,
-    @Query('state') state: string | undefined,
-    @Query('error') error: string | undefined,
-    @Req() request: Request,
-    @Res() response: Response,
-  ) {
-    return this.completeOAuth('github', code, state, error, request, response)
   }
 
   @Post('logout')
