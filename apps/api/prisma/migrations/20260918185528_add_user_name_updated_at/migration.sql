@@ -1,9 +1,2 @@
-/*
-  Warnings:
-
-  - Added the required column `updatedAt` to the `User` table without a default value. This is not possible if the table is not empty.
-
-*/
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "name" TEXT,
-ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+-- name and updatedAt columns are included in the User table creation in 20260919030000_add_users_and_sessions.
+-- This migration is intentionally a no-op to preserve local migration history ordering.
