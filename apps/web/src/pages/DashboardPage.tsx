@@ -3,7 +3,6 @@ import {
   useState,
 } from 'react'
 import {
-  Link,
   useNavigate,
 } from 'react-router'
 import {
@@ -16,6 +15,7 @@ import {
   type DashboardWorkflow,
 } from '../workflow/workflowApi'
 import { logOutRemote } from '../workflow/authApi'
+import DashboardContent from '../components/DashboardContent'
 import './DashboardPage.css'
 
 const STORAGE_KEY =
@@ -88,6 +88,7 @@ function DashboardPage() {
   const [executionLoading, setExecutionLoading] = useState(false)
   const [retryPending, setRetryPending] = useState(false)
   const [executionError, setExecutionError] = useState<string | null>(null)
+  const [signOutError, setSignOutError] = useState<string | null>(null)
 
   const retryExecution = async () => {
     if (!selectedExecution || retryPending) return
@@ -149,6 +150,7 @@ function DashboardPage() {
           return
         }
 
+        setError(null)
         setWorkflows(
           workflowData,
         )
@@ -186,8 +188,13 @@ function DashboardPage() {
   }, [])
 
   async function signOut() {
-    await logOutRemote()
-    navigate('/login', { replace: true })
+    setSignOutError(null)
+    try {
+      await logOutRemote()
+      navigate('/login', { replace: true })
+    } catch (logoutError) {
+      setSignOutError(logoutError instanceof Error ? logoutError.message : 'Could not sign out.')
+    }
   }
 
   const createWorkflow = () => {
@@ -200,321 +207,9 @@ function DashboardPage() {
 
   return (
     <div className="dashboard">
-      <header className="dashboard-nav">
-        <Link
-          to="/"
-          className="dashboard-brand"
-        >
-          <span className="dashboard-logo">
-            <span />
-            <span />
-          </span>
-
-          NexFlow
-        </Link>
-
-        <span className="dashboard-nav-label">
-          Dashboard
-        </span>
-
-        <button
-          className="dashboard-create-top"
-          onClick={
-            createWorkflow
-          }
-        >
-          + New workflow
-        </button>
-
-        <button
-          className="dashboard-signout"
-          onClick={signOut}
-        >
-          Sign out
-        </button>
-
-      </header>
-
-      <main className="dashboard-main">
-        <section className="dashboard-hero">
-          <div>
-            <span className="dashboard-eyebrow">
-              WORKSPACE
-            </span>
-
-            <h1>
-              Good to see you.
-            </h1>
-
-            <p>
-              Build, monitor, and
-              debug your NexFlow
-              automations.
-            </p>
-
-            <div className="dashboard-hero-meta">
-              <span>
-                <i />
-                {workflows.length} workflow{workflows.length === 1 ? '' : 's'}
-              </span>
-              <span>
-                {executions.length} recent run{executions.length === 1 ? '' : 's'}
-              </span>
-              <span>
-                PostgreSQL + BullMQ
-              </span>
-            </div>
-          </div>
-
-          <button
-            className="dashboard-primary"
-            onClick={
-              createWorkflow
-            }
-          >
-            Create workflow
-            <span>→</span>
-          </button>
-        </section>
-
-        {error && (
-          <div className="dashboard-error">
-            <strong>
-              Could not load NexFlow
-            </strong>
-
-            <span>
-              {error}
-            </span>
-          </div>
-        )}
-
-        <section className="dashboard-section">
-          <div className="dashboard-section-header">
-            <div>
-              <h2>
-                My workflows
-              </h2>
-
-              <span>
-                {workflows.length}{' '}
-                saved
-              </span>
-            </div>
-
-            <button
-              onClick={
-                createWorkflow
-              }
-            >
-              New workflow +
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="dashboard-empty">
-              Loading workflows...
-            </div>
-          ) : workflows.length ===
-            0 ? (
-            <div className="dashboard-empty">
-              <strong>
-                No workflows yet
-              </strong>
-
-              <p>
-                Create your first
-                workflow and it will
-                appear here.
-              </p>
-
-              <button
-                onClick={
-                  createWorkflow
-                }
-              >
-                Create workflow
-              </button>
-            </div>
-          ) : (
-            <div className="workflow-grid">
-              {workflows.map(
-                (workflow) => (
-                  <button
-                    key={
-                      workflow.id
-                    }
-                    className="workflow-card"
-                    onClick={() =>
-                      navigate(
-                        `/workspace/${workflow.id}`,
-                      )
-                    }
-                  >
-                    <div className="workflow-card-top">
-                      <span className="workflow-card-icon">
-                        ⌁
-                      </span>
-
-                      <span className="workflow-version">
-                        v
-                        {
-                          workflow.currentVersion
-                        }
-                      </span>
-                    </div>
-
-                    <strong>
-                      {
-                        workflow.name
-                      }
-                    </strong>
-
-                    <p>
-                      Updated{' '}
-                      {formatDate(
-                        workflow.updatedAt,
-                      )}
-                    </p>
-
-                    <div className="workflow-card-bottom">
-                      <span>
-                        {
-                          workflow.executionCount
-                        }{' '}
-                        run
-                        {workflow.executionCount ===
-                        1
-                          ? ''
-                          : 's'}
-                      </span>
-
-                      {workflow.latestExecution ? (
-                        <span
-                          className={`status-badge ${workflow.latestExecution.status.toLowerCase()}`}
-                        >
-                          {
-                            workflow.latestExecution.status
-                          }
-                        </span>
-                      ) : (
-                        <span className="status-badge never">
-                          Never run
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ),
-              )}
-            </div>
-          )}
-        </section>
-
-        <section className="dashboard-section executions-section">
-          <div className="dashboard-section-header">
-            <div>
-              <h2>
-                Recent executions
-              </h2>
-
-              <span>
-                Latest workflow
-                activity
-              </span>
-            </div>
-          </div>
-
-          <div className="execution-table">
-            <div className="execution-row execution-heading">
-              <span>
-                Workflow
-              </span>
-
-              <span>
-                Status
-              </span>
-
-              <span>
-                Duration
-              </span>
-
-              <span>
-                Started
-              </span>
-
-              <span>Details</span>
-            </div>
-
-            {!loading &&
-              executions.length ===
-                0 && (
-                <div className="execution-empty">
-                  No executions
-                  recorded yet.
-                </div>
-              )}
-
-            {executions.map(
-              (execution) => (
-                <div
-                  className="execution-row"
-                  key={
-                    execution.id
-                  }
-                >
-                  <button
-                    className="execution-workflow"
-                    disabled={
-                      !execution.workflow
-                    }
-                    onClick={() => {
-                      if (
-                        execution.workflow
-                      ) {
-                        navigate(
-                          `/workspace/${execution.workflow.id}`,
-                        )
-                      }
-                    }}
-                  >
-                    {execution
-                      .workflow
-                      ?.name ??
-                      'Unsaved workflow'}
-                  </button>
-
-                  <span
-                    className={`status-badge ${execution.status.toLowerCase()}`}
-                  >
-                    {
-                      execution.status
-                    }
-                  </span>
-
-                  <span>
-                    {formatDuration(
-                      execution.durationMs,
-                    )}
-                  </span>
-
-                  <span>
-                    {formatDate(
-                      execution.startedAt,
-                    )}
-                  </span>
-
-                  <button
-                    className="execution-details-button"
-                    onClick={() => void openExecution(execution.id)}
-                  >
-                    View →
-                  </button>
-                </div>
-              ),
-            )}
-          </div>
-        </section>
-      </main>
+      {signOutError && <div className="dashboard-logout-error" role="alert">{signOutError}</div>}
+      <DashboardContent workflows={workflows} executions={executions} loading={loading} error={error}
+        createWorkflow={createWorkflow} signOut={signOut} openExecution={openExecution} />
       {(
         selectedExecution ||
         executionLoading ||

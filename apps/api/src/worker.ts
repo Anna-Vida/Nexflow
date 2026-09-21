@@ -5,7 +5,9 @@ import { createWorkflowWorker } from './queue/workflow-worker.js';
 import { WorkflowsService } from './workflows/workflows.service.js';
 import { ExecutionRecoveryService } from './recovery/execution-recovery.service.js';
 import { ScheduleService } from './schedules/schedule.service.js';
+import { validateProductionEnv } from './config/production-env.js';
 
+validateProductionEnv();
 const app = await NestFactory.createApplicationContext(AppModule);
 const worker = createWorkflowWorker(app.get(WorkflowsService), app.get(ScheduleService));
 const recovery = app.get(ExecutionRecoveryService);

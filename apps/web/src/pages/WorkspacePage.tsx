@@ -20,7 +20,6 @@ import {
 } from '@xyflow/react'
 import NodeConfigPanel from '../components/NodeConfigPanel'
 import ExecutionDataPanel from '../components/ExecutionDataPanel'
-import { executionSocket } from '../workflow/executionSocket'
 import { executeWorkflowRemote, getWorkflowRemote, saveWorkflowRemote } from '../workflow/workflowApi'
 import type {
   NodeKind,
@@ -124,24 +123,36 @@ const initialNodes: WorkflowNode[] = [
     },
   },
   {
-    id: 'http-1',
+    id: 'delay-1',
     type: 'workflow',
     position: { x: 700, y: 180 },
     data: {
-      kind: 'http',
-      title: 'HTTP Request',
-      subtitle: 'POST https://api.example.com/notify',
-      category: 'ACTION',
-      icon: '{ }',
+      kind: 'delay',
+      title: 'Delay',
+      subtitle: '1 second',
+      category: 'UTILITY',
+      icon: '◷',
       hasOutput: false,
       config: {
-        method: 'POST',
-        url: 'https://api.example.com/notify',
-        headers: '{\n  "Content-Type": "application/json"\n}',
-        body: '{\n  "status": "approved"\n}',
-        timeout: 5000,
-        retries: 0,
-        retryDelayMs: 500,
+        duration: 1,
+        unit: 'seconds',
+      },
+    },
+  },
+  {
+    id: 'delay-2',
+    type: 'workflow',
+    position: { x: 700, y: 360 },
+    data: {
+      kind: 'delay',
+      title: 'Delay',
+      subtitle: '1 second',
+      category: 'UTILITY',
+      icon: '◷',
+      hasOutput: false,
+      config: {
+        duration: 1,
+        unit: 'seconds',
       },
     },
   },
@@ -158,10 +169,20 @@ const initialEdges: Edge[] = [
     },
   },
   {
-    id: 'condition-http',
+    id: 'condition-delay',
     source: 'condition-1',
     sourceHandle: 'true',
-    target: 'http-1',
+    target: 'delay-1',
+    animated: true,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+    },
+  },
+  {
+    id: 'condition-delay-false',
+    source: 'condition-1',
+    sourceHandle: 'false',
+    target: 'delay-2',
     animated: true,
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -204,12 +225,12 @@ const nodeTemplates: Record<NodeKind, WorkflowNodeData> = {
   http: {
     kind: 'http',
     title: 'HTTP Request',
-    subtitle: 'GET https://api.example.com',
+    subtitle: 'Configure URL',
     category: 'ACTION',
     icon: '{ }',
     config: {
       method: 'GET',
-      url: 'https://api.example.com',
+      url: '',
       headers: '{}',
       body: '{}',
       timeout: 5000,
@@ -318,7 +339,10 @@ function validateNode(data: WorkflowNodeData) {
 
   if (data.kind === 'http') {
     try {
-      new URL(data.config.url)
+      const url = new URL(data.config.url)
+      if (url.hostname === 'api.example.com') {
+        return 'Replace the example URL with a real HTTP endpoint before running.'
+      }
     } catch {
       return 'HTTP Request requires a valid URL.'
     }
@@ -350,12 +374,6 @@ function validateNode(data: WorkflowNodeData) {
 function WorkspacePage() {
   const { workflowId: routeWorkflowId } = useParams()
   const navigate = useNavigate()
-  useEffect(() => {
-    executionSocket.connect()
-    return () => {
-      executionSocket.disconnect()
-    }
-  }, [])
 
   const savedWorkflow = useMemo(
     () => routeWorkflowId ? null : loadSavedWorkflow(),
@@ -374,6 +392,7 @@ function WorkspacePage() {
   const [saveStatus, setSaveStatus] = useState(
     savedWorkflow?.revision ? `Saved · v${savedWorkflow.revision}` : savedWorkflow ? 'Saved locally' : 'Unsaved',
   )
+  const [saveNotice, setSaveNotice] = useState<string | null>(null)
   const [workflowId, setWorkflowId] = useState<string | undefined>(routeWorkflowId ?? savedWorkflow?.remoteId)
   const [webhookToken, setWebhookToken] = useState<string | undefined>()
   const [workflowRevision, setWorkflowRevision] = useState(savedWorkflow?.revision ?? 0)
@@ -392,6 +411,12 @@ function WorkspacePage() {
   )
   const [testInputError, setTestInputError] = useState<string | null>(null)
   const [variableContext, setVariableContext] = useState<Record<string, unknown>>(() => inputVariables(testInputText))
+
+  useEffect(() => {
+    if (!saveNotice) return
+    const timer = window.setTimeout(() => setSaveNotice(null), 4000)
+    return () => window.clearTimeout(timer)
+  }, [saveNotice])
 
   useEffect(() => {
     localStorage.setItem(testInputKey(testInputScope === 'draft' ? undefined : testInputScope), testInputText)
@@ -462,6 +487,7 @@ function WorkspacePage() {
 
   const markUnsaved = () => {
     setSaveStatus('Unsaved')
+    setSaveNotice(null)
   }
 
   const handleNodesChange = useCallback(
@@ -557,9 +583,7 @@ function WorkspacePage() {
       .filter((result) => result.error !== null)
 
     if (invalidNodes.length > 0) {
-      setSaveStatus(
-        `${invalidNodes.length} node${invalidNodes.length === 1 ? ' needs' : 's need'} attention`,
-      )
+      setSaveStatus(invalidNodes[0].error ?? 'Node needs attention')
 
       setSelectedNodeId(invalidNodes[0].node.id)
       return
@@ -588,6 +612,7 @@ function WorkspacePage() {
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(workflow, null, 2))
       setSaveStatus(`Saved · v${result.version}`)
+      setSaveNotice(`Workflow saved · version ${result.version}`)
       if (!routeWorkflowId) {
         navigate(`/workspace/${result.workflowId}`, { replace: true })
       }
@@ -607,6 +632,13 @@ function WorkspacePage() {
       setSelectedNodeId(null)
     }
 
+    markUnsaved()
+  }
+
+  const deleteNode = (nodeId: string) => {
+    setNodes((currentNodes) => currentNodes.filter((node) => node.id !== nodeId))
+    setEdges((currentEdges) => currentEdges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId))
+    setSelectedNodeId(null)
     markUnsaved()
   }
 
@@ -652,7 +684,7 @@ function WorkspacePage() {
     if (invalidNodes.length > 0) {
       setSelectedNodeId(invalidNodes[0].node.id)
       setRunState('failed')
-      setRunMessage(`${invalidNodes.length} node${invalidNodes.length === 1 ? ' needs' : 's need'} attention before running.`)
+      setRunMessage(invalidNodes[0].error ?? 'Node needs attention before running.')
       return
     }
 
@@ -667,59 +699,8 @@ function WorkspacePage() {
     setRunMessage('Workflow is executing...')
 
     const executionId = crypto.randomUUID()
-    const handleExecutionEvent = (event: {
-      executionId: string
-      nodeId: string
-      status: 'running' | 'success' | 'failed' | 'skipped'
-      message: string
-      context?: Record<string, unknown>
-    }) => {
-      if (event.executionId !== executionId) return
-      setRuntimeStates((current) => ({
-        ...current,
-        [event.nodeId]: { status: event.status, message: event.message },
-      }))
-      if (event.context) setVariableContext(event.context)
-    }
-
-    executionSocket.on('execution:event', handleExecutionEvent)
-
     try {
-      if (!executionSocket.connected) {
-        executionSocket.connect()
-        await new Promise<void>((resolve, reject) => {
-          const timer = window.setTimeout(() => {
-            cleanup()
-            reject(new Error('Could not connect to NexFlow execution stream.'))
-          }, 3000)
-          const cleanup = () => {
-            window.clearTimeout(timer)
-            executionSocket.off('connect', connected)
-            executionSocket.off('connect_error', failed)
-          }
-          const connected = () => { cleanup(); resolve() }
-          const failed = () => { cleanup(); reject(new Error('Could not connect to NexFlow execution stream.')) }
-          executionSocket.once('connect', connected)
-          executionSocket.once('connect_error', failed)
-        })
-      }
-
-      await new Promise<void>((resolve, reject) => {
-        executionSocket.timeout(3000).emit(
-          'execution:subscribe',
-          { executionId },
-          (error: Error | null, response: { ok: boolean }) => {
-            if (error || !response?.ok) {
-              reject(new Error('Could not subscribe to execution stream.'))
-              return
-            }
-            resolve()
-          },
-        )
-      })
-
       const result = await executeWorkflowRemote(executionId, workflowId, nodes, edges, testInput)
-      // Reconcile the final state if a socket event was missed during execution.
       setRuntimeStates(Object.fromEntries(result.events.map((event) => [
         event.nodeId,
         { status: event.status, message: event.message },
@@ -732,7 +713,6 @@ function WorkspacePage() {
       setRunState('failed')
       setRunMessage(error instanceof Error ? error.message : 'Workflow execution failed.')
     } finally {
-      executionSocket.off('execution:event', handleExecutionEvent)
       setIsRunning(false)
     }
   }
@@ -756,6 +736,10 @@ function WorkspacePage() {
             </span>
 
             NexFlow
+          </Link>
+
+          <Link to="/dashboard" className="workspace-back-link">
+            <span aria-hidden="true">←</span> Dashboard
           </Link>
 
           <div className="header-divider" />
@@ -890,6 +874,12 @@ function WorkspacePage() {
         </aside>
 
         <main className="flow-area">
+          {saveNotice && (
+            <div className="save-banner" role="status" aria-live="polite">
+              <span aria-hidden="true">✓</span>
+              {saveNotice}
+            </div>
+          )}
           <ReactFlow
             nodes={renderedNodes}
             edges={edges}
@@ -943,7 +933,7 @@ function WorkspacePage() {
             <i />
             <span>Drag</span> pan
             <i />
-            <span>Delete</span> remove
+            <span>Select a node</span> then use Delete node
           </div>
         </main>
 
@@ -952,6 +942,7 @@ function WorkspacePage() {
           webhookToken={webhookToken}
           onChange={updateNodeData}
           onClose={() => setSelectedNodeId(null)}
+          onDelete={deleteNode}
         />
       </div>
       <ExecutionDataPanel

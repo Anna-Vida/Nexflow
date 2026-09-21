@@ -4,7 +4,7 @@
 
 It lets users design workflows as directed graphs, trigger them through webhooks or schedules, execute HTTP actions, inspect execution history, and recover safely from worker failures without blindly repeating uncertain external side effects.
 
-> Status: portfolio release candidate. Authentication, workflow ownership, reliability controls, scheduling, and CI are implemented; deployment readiness is documented.
+> Status: local release candidate. Production deployment has not been completed; see [deployment requirements](docs/deployment.md).
 
 ## What NexFlow can do
 
@@ -20,10 +20,12 @@ It lets users design workflows as directed graphs, trigger them through webhooks
 - Worker leases and heartbeat fencing
 - Crash reconciliation for abandoned executions
 - Safe `RECOVERY_REQUIRED` handling when an external outcome is uncertain
-- Execution history, retry lineage, and live status updates
+- Execution history, retry lineage, and final per-node results for manual runs
 - User registration, login, logout, and session-based authentication
+- Google OAuth sign-in
 - Per-user workflow and execution ownership
 - Authenticated Socket.IO execution subscriptions
+- A runnable starter workflow and visual results for manual test runs
 
 ## Architecture
 
@@ -105,6 +107,10 @@ NexFlow uses server-side sessions backed by PostgreSQL.
 - Session tokens are random 32-byte values
 - Only a SHA-256 hash of the session token is stored in PostgreSQL
 - Browser sessions use an `HttpOnly`, `SameSite=Lax` cookie
+- Production session cookies also use `Secure`; logout revokes the session in PostgreSQL
+- Authenticated users are redirected away from the login page, including after browser Back navigation
+- Auth and workflow API responses set `Cache-Control: no-store`
+- Production login, registration, and public webhook requests use Redis-backed rate limits
 - Private workflow routes are owner-scoped
 - Cross-account resource access returns `404`
 - Public webhook triggering remains separate from dashboard authentication
@@ -117,6 +123,8 @@ Public webhook URLs continue to use each workflow's random webhook token:
 ```
 
 External webhook senders do not need a NexFlow user account.
+
+Google sign-in requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and matching `API_ORIGIN`/`WEB_ORIGIN` values. Register `${API_ORIGIN}/api/auth/oauth/google/callback` as an authorized redirect URI in Google Cloud. Use `localhost` consistently during local OAuth testing; switching between `localhost` and `127.0.0.1` can break the state cookie.
 
 ## Tech stack
 
@@ -146,20 +154,9 @@ External webhook senders do not need a NexFlow user account.
 - oxlint
 - TypeScript builds
 
-## Current verification
+## Verification
 
-At the authentication + ownership checkpoint:
-
-- Unit tests: **18/18**
-- PostgreSQL integration tests: **21/21**
-- E2E tests: **1/1**
-- Scheduler integration tests: **12/12** at the scheduler checkpoint
-- Webhook contract tests: **11/11**
-- Real worker crash/restart tests: **2/2**
-- Real schedule contract: **1/1**
-- API and web builds pass
-- Lint passes
-- Prisma migration status is up to date
+The repository includes unit, integration, E2E, webhook, scheduler, and worker recovery tests. Run the commands below against your own local PostgreSQL and Redis services before deployment. API and web production builds were verified during the latest local update.
 
 ## Repository structure
 
@@ -182,6 +179,8 @@ Nexflow/
 - npm
 - PostgreSQL
 - Redis
+
+The example API environment uses PostgreSQL port `5433`. The root `docker-compose.yml` exposes PostgreSQL on `5432`; if using that container, change `DATABASE_URL` to port `5432`. Redis is not included in that Compose file and must be started separately.
 
 ### API
 
@@ -209,13 +208,26 @@ npm install
 npm run dev
 ```
 
-The Vite development server runs the NexFlow frontend locally.
+Open `http://localhost:5173`. Vite proxies `/api` and `/socket.io` to the API on port `3000`. Keep the API running for login, saving, and manual runs.
 
 ## Environment
 
-Copy `apps/api/.env.example` to `apps/api/.env` for local development, then provide your own PostgreSQL and Redis connection strings.
+Copy `apps/api/.env.example` to `apps/api/.env` for local development, then provide your own PostgreSQL and Redis connection strings. Set the Google OAuth values if you want Google sign-in.
 
 Secrets and local `.env` files are not committed to the repository. See `docs/deployment.md` for the production topology and rollout checklist.
+
+## Try the starter workflow
+
+1. Sign in and open **New workflow** from the dashboard.
+2. The starter graph is **Webhook → Condition → Delay**, with a Delay on each condition branch. Open **Test data** and set `{"amount":12500}` for the true branch or `{"amount":500}` for the false branch.
+3. Click **Run workflow**. Manual runs execute through the API and show each node's final result. They require PostgreSQL but do not enqueue a BullMQ job.
+4. Click **Save** to create a version and show the save confirmation banner. Select the Webhook node to copy its live endpoint.
+
+Sending a request to the saved webhook endpoint is different from a manual run: webhook and scheduled executions require Redis and the separate worker process. The starter Delays demonstrate branching; add and configure an HTTP Request with a real destination when you want an external action. Example URLs such as `api.example.com` are placeholders and cannot be executed.
+
+## Deployment note
+
+Vercel can host the built frontend, but this app also needs a long-running NestJS API, a separate worker, PostgreSQL, Redis, and same-origin routing for `/api` and `/socket.io`. The current cookie and browser request setup assumes that topology. Follow [the deployment guide](docs/deployment.md) before publishing the app.
 
 ## Useful test commands
 
@@ -247,7 +259,7 @@ Completed major milestones include:
 - Typed node configuration and persistence
 - Workflow execution engine
 - PostgreSQL persistence
-- Live execution updates
+- Final per-node results for manual runs
 - Real HTTP actions with SSRF protections
 - Real webhooks
 - BullMQ background processing

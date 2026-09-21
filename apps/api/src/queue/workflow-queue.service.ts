@@ -20,6 +20,10 @@ export class WorkflowQueueService implements OnModuleDestroy {
     this.queue.on('error', (error: Error) => this.logger.error(error.message));
   }
 
+  async ping() {
+    await this.queue.getJobCounts();
+  }
+
   async enqueue(data: { executionId: string }) {
     // This bounds the HTTP wait, not the Redis command itself. A late job can
     // only run if its execution is still QUEUED when the worker claims it.

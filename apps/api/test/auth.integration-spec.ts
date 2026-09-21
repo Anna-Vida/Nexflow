@@ -61,4 +61,25 @@ describe('account sessions with PostgreSQL', () => {
     await request(app.getHttpServer()).get('/api/auth/me').set('Cookie', secondCookie).expect(401);
     await request(app.getHttpServer()).get('/api/auth/me').set('Cookie', cookie).expect(200);
   });
+
+  it('does not assign legacy workflows to a newly registered account', async () => {
+    const legacyOwnerId = '00000000-0000-4000-8000-000000000001';
+    const workflow = await prisma.workflow.create({
+      data: { ownerId: legacyOwnerId, name: 'Unclaimed legacy workflow' },
+    });
+    let newUserId: string | undefined;
+
+    try {
+      const signup = await request(app.getHttpServer()).post('/api/auth/register')
+        .send({ email: `new-${randomUUID()}@example.test`, password });
+      expect(signup.status).toBe(201);
+      newUserId = signup.body.id as string;
+
+      const stored = await prisma.workflow.findUniqueOrThrow({ where: { id: workflow.id } });
+      expect(stored.ownerId).toBe(legacyOwnerId);
+    } finally {
+      await prisma.workflow.delete({ where: { id: workflow.id } });
+      if (newUserId) await prisma.user.delete({ where: { id: newUserId } });
+    }
+  });
 });

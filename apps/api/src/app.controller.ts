@@ -1,9 +1,15 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { AppService } from './app.service.js';
+import { PrismaService } from './database/prisma.service.js';
+import { WorkflowQueueService } from './queue/workflow-queue.service.js';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly prisma: PrismaService,
+    private readonly queue: WorkflowQueueService,
+  ) {}
 
   @Get()
   getHello(): string {
@@ -17,5 +23,15 @@ export class AppController {
       service: 'nexflow-api',
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Get('ready')
+  async ready() {
+    try {
+      await Promise.all([this.prisma.$queryRaw`SELECT 1`, this.queue.ping()]);
+      return { status: 'ready' };
+    } catch {
+      throw new ServiceUnavailableException('NexFlow dependencies are unavailable.');
+    }
   }
 }

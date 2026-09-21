@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
-import { getSessionUser, logInRemote, signUpRemote } from '../workflow/authApi'
+import { logInRemote, signUpRemote } from '../workflow/authApi'
 import './LoginPage.css'
 
 function GoogleIcon() {
@@ -69,18 +69,6 @@ function LoginPage() {
   const [activeSlide, setActiveSlide] = useState(0)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(oauthMessage(searchParams.get('oauth')))
-
-  useEffect(() => {
-    let active = true
-    void getSessionUser()
-      .then((user) => {
-        if (active && user) navigate('/dashboard', { replace: true })
-      })
-      .catch(() => undefined)
-    return () => {
-      active = false
-    }
-  }, [navigate])
 
   useEffect(() => {
     const timer = setInterval(() => {

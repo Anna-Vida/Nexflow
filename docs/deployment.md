@@ -8,6 +8,21 @@ NexFlow has three runtime components:
 
 It also requires PostgreSQL and Redis.
 
+## Vercel frontend + Railway backend
+
+This repository includes `apps/web/vercel.mjs` and `apps/api/Dockerfile` for a split deployment. Use the public Vercel URL as the **single browser origin**. Vercel rewrites `/api/*` and `/socket.io/*` to the Railway API; the browser continues to use the Vercel host for cookies and Google OAuth.
+
+1. Create Railway PostgreSQL and Redis services. Create two services from this repository, both with root directory `/apps/api` and the included Dockerfile. Use `node dist/main.js` for the API and `node dist/worker.js` for the worker. Only the API needs a public Railway domain.
+2. Set `DATABASE_URL` and `REDIS_URL` on both Railway services using references to the managed databases. Set `NODE_ENV=production`, `WEB_ORIGIN=https://<vercel-domain>`, `API_ORIGIN=https://<vercel-domain>`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` on both. The production processes reject missing values or non-HTTPS origins.
+3. Run `npx prisma migrate deploy` against the production database before starting the new API version. Railway's API pre-deploy command can run it from the built image.
+4. Create a Vercel project with root directory `apps/web`. Set `NEXFLOW_API_ORIGIN=https://<railway-api-domain>` in the Vercel build environment, then deploy. The included Vercel configuration fails the build if this URL is missing.
+5. Add `https://<vercel-domain>/api/auth/oauth/google/callback` to the Google OAuth client's authorized redirect URIs. Redeploy the API if the public Vercel domain changes.
+6. Set the Railway API health check to `GET /api/ready`, which checks PostgreSQL and Redis. Then test a browser sign-in, saving a workflow, a manual run, a webhook POST, and a scheduled run. The last two require the Railway worker and Redis to be healthy.
+
+Do not put a Railway database URL or Google client secret into a `VITE_` frontend variable. `NEXFLOW_API_ORIGIN` is a public host name used only to generate rewrites.
+
+Production login, registration, and webhook routes use Redis-backed request limits. If Redis is unavailable, those routes return a service error rather than accepting unbounded requests.
+
 ## Recommended production topology
 
 The current authentication model is intentionally **same-origin**. The browser uses relative `/api` and `/socket.io` URLs and the session cookie is `HttpOnly; SameSite=Lax`.
@@ -42,6 +57,10 @@ DATABASE_URL=
 REDIS_URL=
 NODE_ENV=production
 PORT=3000
+WEB_ORIGIN=https://<vercel-domain>
+API_ORIGIN=https://<vercel-domain>
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
 
 Use provider-generated PostgreSQL and Redis connection strings in production. Do not commit them.
@@ -73,6 +92,8 @@ Health check:
 ```text
 GET /api/health
 ```
+
+`GET /api/health` reports only API process liveness. Use `GET /api/ready` for deployment readiness; it returns `503` if PostgreSQL or Redis is unavailable.
 
 Expected shape:
 

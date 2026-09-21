@@ -479,6 +479,42 @@
   padding: 18px;
 }
 
+.workspace-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border: 1px solid #303139;
+  border-radius: 7px;
+  color: #b7b4c2;
+  text-decoration: none;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.workspace-back-link:hover {
+  border-color: #8e76f8;
+  color: #fff;
+}
+
+.config-delete {
+  width: 100%;
+  min-height: 34px;
+  margin-bottom: 18px;
+  border: 1px solid #5a3039;
+  border-radius: 7px;
+  color: #ee9ba9;
+  background: #24151a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+
+.config-delete:hover {
+  border-color: #a94f62;
+  color: #fff;
+}
+
 .config-node-id {
   margin-bottom: 25px;
 }
@@ -811,6 +847,25 @@
   background: rgba(15, 16, 20, 0.93);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(10px);
+}
+
+.save-banner {
+  position: absolute;
+  z-index: 7;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: min(320px, calc(100% - 36px));
+  padding: 11px 14px;
+  border: 1px solid #336d50;
+  border-radius: 10px;
+  color: #b7f0cf;
+  background: rgba(19, 35, 28, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .execution-banner-dot {

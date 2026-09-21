@@ -18,9 +18,10 @@ import { ScheduleService } from '../schedules/schedule.service.js';
 
 import { QueueModule } from '../queue/queue.module.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { SecurityModule } from '../security/security.module.js';
 
 @Module({
-  imports: [QueueModule, AuthModule],
+  imports: [QueueModule, AuthModule, SecurityModule],
   exports: [WorkflowsService],
   controllers: [
     WorkflowsController,

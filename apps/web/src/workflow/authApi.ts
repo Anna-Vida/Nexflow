@@ -14,7 +14,7 @@ async function messageFrom(response: Response, fallback: string) {
 export async function getSessionUser(): Promise<SessionUser | null> {
   let response: Response
   try {
-    response = await fetch('/api/auth/me', { credentials: 'include' })
+    response = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' })
   } catch {
     throw new Error('NexFlow API is unavailable.')
   }
@@ -54,5 +54,11 @@ export function logInRemote(email: string, password: string) {
 }
 
 export async function logOutRemote() {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => undefined)
+  let response: Response
+  try {
+    response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+  } catch {
+    throw new Error('Could not sign out. Check your connection and try again.')
+  }
+  if (!response.ok) throw new Error(await messageFrom(response, 'Could not sign out. Please try again.'))
 }

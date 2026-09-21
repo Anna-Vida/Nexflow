@@ -16,6 +16,7 @@ import { AuthGuard, type AuthenticatedRequest } from './auth.guard.js'
 import { AuthService } from './auth.service.js'
 import { CurrentUser } from './current-user.decorator.js'
 import type { OAuthProvider } from './oauth.js'
+import { PublicRateLimitGuard } from '../security/public-rate-limit.guard.js'
 
 const credentialsSchema = z.object({
   email: z.email().max(254),
@@ -28,6 +29,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('register')
+  @UseGuards(PublicRateLimitGuard)
   @HttpCode(201)
   async register(@Body() body: unknown, @Res({ passthrough: true }) response: Response) {
     const parsed = credentialsSchema.safeParse(body)
@@ -41,6 +43,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @UseGuards(PublicRateLimitGuard)
   @HttpCode(200)
   async login(@Body() body: unknown, @Res({ passthrough: true }) response: Response) {
     const parsed = credentialsSchema.safeParse(body)
@@ -128,7 +131,8 @@ export class AuthController {
       ])
 
       return response.redirect(`${this.auth.getWebOrigin()}/dashboard`)
-    } catch {
+    } catch (oauthError) {
+      console.error('[OAuth callback error]', oauthError)
       response.setHeader('Set-Cookie', clearState)
       return response.redirect(`${loginUrl}?oauth=failed`)
     }

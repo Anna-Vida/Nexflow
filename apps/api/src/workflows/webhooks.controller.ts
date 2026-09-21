@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import type {
   Request,
@@ -14,6 +15,7 @@ import type {
 import {
   WebhooksService,
 } from './webhooks.service.js';
+import { PublicRateLimitGuard } from '../security/public-rate-limit.guard.js';
 
 function webhookPath(
   splat:
@@ -37,6 +39,7 @@ export class WebhooksController {
   ) {}
 
   @All(':token/*splat')
+  @UseGuards(PublicRateLimitGuard)
   @HttpCode(HttpStatus.ACCEPTED)
   trigger(
     @Param('token')

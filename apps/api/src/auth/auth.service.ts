@@ -26,7 +26,6 @@ import {
 } from './oauth.js'
 
 const sessionLifetimeMs = 7 * 24 * 60 * 60 * 1000
-const legacyOwnerId = '00000000-0000-4000-8000-000000000001'
 
 function sessionExpiresAt() {
   return new Date(Date.now() + sessionLifetimeMs)
@@ -44,14 +43,9 @@ export class AuthService {
     const normalizedEmail = email.trim().toLowerCase()
     const passwordHash = await hashPassword(password)
     try {
-      const user = await this.prisma.$transaction(async (tx) => {
-        const created = await tx.user.create({
-          data: { email: normalizedEmail, passwordHash, name: name ?? null },
-          select: { id: true, email: true, name: true },
-        })
-        await tx.workflow.updateMany({ where: { ownerId: legacyOwnerId }, data: { ownerId: created.id } })
-        await tx.execution.updateMany({ where: { ownerId: legacyOwnerId }, data: { ownerId: created.id } })
-        return created
+      const user = await this.prisma.user.create({
+        data: { email: normalizedEmail, passwordHash, name: name ?? null },
+        select: { id: true, email: true, name: true },
       })
       return this.createSession(user)
     } catch (error) {
@@ -189,14 +183,6 @@ export class AuthService {
           select: { id: true, email: true, name: true },
         })
 
-        await tx.workflow.updateMany({
-          where: { ownerId: legacyOwnerId },
-          data: { ownerId: user.id },
-        })
-        await tx.execution.updateMany({
-          where: { ownerId: legacyOwnerId },
-          data: { ownerId: user.id },
-        })
       } else if (!user.name && name) {
         user = await tx.user.update({
           where: { id: user.id },

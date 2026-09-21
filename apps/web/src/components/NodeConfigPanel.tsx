@@ -14,12 +14,13 @@ type Props = {
   webhookToken?: string
   onChange: (nodeId: string, data: WorkflowNodeData) => void
   onClose: () => void
+  onDelete: (nodeId: string) => void
 }
 
 const PUBLIC_API_URL = (import.meta.env.VITE_PUBLIC_API_URL as string | undefined)
-  ?.replace(/\/$/, '') ?? 'http://127.0.0.1:3000'
+  ?.replace(/\/$/, '') ?? window.location.origin
 
-function NodeConfigPanel({ node, webhookToken, onChange, onClose }: Props) {
+function NodeConfigPanel({ node, webhookToken, onChange, onClose, onDelete }: Props) {
   if (!node) {
     return (
       <aside className="config-panel config-panel-empty">
@@ -408,6 +409,9 @@ function NodeConfigPanel({ node, webhookToken, onChange, onClose }: Props) {
       </div>
 
       <div className="config-body">
+        <button type="button" className="config-delete" onClick={() => onDelete(node.id)}>
+          Delete node
+        </button>
         <div className="config-node-id">
           <span>NODE ID</span>
           <code>{node.id}</code>
