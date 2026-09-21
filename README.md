@@ -4,7 +4,13 @@
 
 It lets users design workflows as directed graphs, trigger them through webhooks or schedules, execute HTTP actions, inspect execution history, and recover safely from worker failures without blindly repeating uncertain external side effects.
 
-> Status: local release candidate. Production deployment has not been completed; see [deployment requirements](docs/deployment.md).
+> Status: **deployed**. Live at [https://nexflow-one.vercel.app](https://nexflow-one.vercel.app) — frontend on Vercel, API + Worker on Railway.
+
+## Live Demo
+
+🌐 **[https://nexflow-one.vercel.app](https://nexflow-one.vercel.app)**
+
+Hosted on Vercel (frontend) + Railway (NestJS API, BullMQ Worker, PostgreSQL, Redis).
 
 ## What NexFlow can do
 
