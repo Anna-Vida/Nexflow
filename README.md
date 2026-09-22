@@ -5,6 +5,7 @@
 It lets users design workflows as directed graphs, trigger them through webhooks or schedules, execute HTTP actions, inspect execution history, and recover safely from worker failures without blindly repeating uncertain external side effects.
 
 > Status: **deployed**. Live at [https://nexflow-one.vercel.app](https://nexflow-one.vercel.app) — frontend on Vercel, API + Worker on Railway.
+> Verified on September 22, 2026: the site returns HTTP 200 and `/api/ready` returns `{"status":"ready"}`.
 
 ## Live Demo
 
