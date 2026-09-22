@@ -92,6 +92,18 @@ const delayDataSchema = z
   })
   .passthrough();
 
+const mapDataSchema = z.object({
+  ...commonShape,
+  kind: z.literal('map'),
+  config: z.object({ assignments: z.string().max(16_384) }),
+}).passthrough();
+
+const noteDataSchema = z.object({
+  ...commonShape,
+  kind: z.literal('note'),
+  config: z.object({ text: z.string().max(4_096) }),
+}).passthrough();
+
 export const workflowNodeSchema = z
   .object({
     id: z.string().min(1),
@@ -110,6 +122,8 @@ export const workflowNodeSchema = z
       conditionDataSchema,
       httpDataSchema,
       delayDataSchema,
+      mapDataSchema,
+      noteDataSchema,
     ]),
   })
   .passthrough();

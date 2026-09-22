@@ -1,5 +1,5 @@
 import type { ExecuteWorkflowDto } from './workflow.schemas.js';
-import { executeHttpRequest } from './http-executor.js';
+import { executeHttpRequest, interpolateTemplate } from './http-executor.js';
 import { UncertainExternalOutcomeError } from './idempotent-http.service.js';
 
 type WorkflowNode = ExecuteWorkflowDto['nodes'][number];
@@ -272,6 +272,32 @@ async function executeNode(
           ? `${data.config.duration} ${data.config.unit} simulated; capped at 5 seconds`
           : `Waited ${data.config.duration} ${data.config.unit}`,
     };
+  }
+
+  if (data.kind === 'note') {
+    return { context, message: 'Note skipped.' };
+  }
+
+  if (data.kind === 'map') {
+    let assignments: unknown;
+    try {
+      assignments = JSON.parse(data.config.assignments);
+    } catch {
+      throw new Error('Data mapping must be a JSON object.');
+    }
+    if (!assignments || typeof assignments !== 'object' || Array.isArray(assignments)) {
+      throw new Error('Data mapping must be a JSON object.');
+    }
+    const mapped: WorkflowContext = {};
+    for (const [key, value] of Object.entries(assignments)) {
+      if (!key || ['__proto__', 'constructor', 'prototype'].includes(key)) {
+        throw new Error('Data mapping contains an invalid field name.');
+      }
+      if (typeof value === 'string') mapped[key] = interpolateTemplate(value, context);
+      else if (value === null || typeof value === 'number' || typeof value === 'boolean') mapped[key] = value;
+      else throw new Error('Data mapping values must be strings, numbers, booleans, or null.');
+    }
+    return { context: { ...context, ...mapped }, message: `Mapped ${Object.keys(mapped).length} field(s).` };
   }
 
   if (options.executeHttp) return options.executeHttp(node, context);

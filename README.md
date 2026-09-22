@@ -13,10 +13,17 @@ It lets users design workflows as directed graphs, trigger them through webhooks
 
 Hosted on Vercel (frontend) + Railway (NestJS API, BullMQ Worker, PostgreSQL, Redis).
 
+### Recover a workflow from the local site
+
+The hosted site has a separate PostgreSQL database and browser origin from `localhost`. A workflow saved locally before deployment does not appear in the hosted account automatically.
+
+Start the web app locally with `cd apps/web` and `npm run dev`, then open [http://localhost:5173/recover.html](http://localhost:5173/recover.html) in the **same browser** used for the local workflow. Download the local workflow JSON. On the hosted site, open a workspace, click **Import**, choose that file, then click **Save**. The recovery page can export the most recent workflow stored by the local site even if the local API is unavailable. If it says no workflow was found, the workflow may only exist in the local PostgreSQL database and that database must be restored separately.
+
 ## What NexFlow can do
 
 - Visual drag-and-drop workflow editor
-- Trigger, logic, delay, condition, and HTTP action nodes
+- Trigger, condition, data mapping, note, delay, and HTTP action nodes
+- Workflow JSON import and export from the workspace
 - Directed-graph validation and execution
 - Saved workflow versions in PostgreSQL
 - Real webhook triggers

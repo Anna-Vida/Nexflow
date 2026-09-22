@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@xyflow/react'
 
-export type NodeKind = 'webhook' | 'schedule' | 'condition' | 'http' | 'delay'
+export type NodeKind = 'webhook' | 'schedule' | 'condition' | 'http' | 'delay' | 'map' | 'note'
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -51,6 +51,9 @@ export type NodeRuntimeState = {
   message?: string
 }
 
+export type MapConfig = { assignments: string }
+export type NoteConfig = { text: string }
+
 type CommonNodeData = {
   title: string
   subtitle: string
@@ -81,6 +84,14 @@ export type WorkflowNodeData =
   | (CommonNodeData & {
       kind: 'delay'
       config: DelayConfig
+    })
+  | (CommonNodeData & {
+      kind: 'map'
+      config: MapConfig
+    })
+  | (CommonNodeData & {
+      kind: 'note'
+      config: NoteConfig
     })
 
 export type WorkflowNode = Node<WorkflowNodeData>

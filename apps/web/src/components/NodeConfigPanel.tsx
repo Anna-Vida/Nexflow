@@ -3,6 +3,8 @@ import type {
   DelayConfig,
   HttpConfig,
   HttpMethod,
+  MapConfig,
+  NoteConfig,
   ScheduleConfig,
   WebhookConfig,
   WorkflowNode,
@@ -341,6 +343,37 @@ function NodeConfigPanel({ node, webhookToken, onChange, onClose, onDelete }: Pr
           </div>
         </>
       )
+    }
+
+    if (data.kind === 'map') {
+      const update = (patch: Partial<MapConfig>) => onChange(node.id, {
+        ...data,
+        config: { ...data.config, ...patch },
+        subtitle: 'Set fields from input',
+      })
+      return <>
+        <label className="config-field">
+          <span>Fields to set (JSON)</span>
+          <textarea rows={8} value={data.config.assignments}
+            onChange={(event) => update({ assignments: event.target.value })}
+            placeholder={'{\n  "message": "Hello {{name}}",\n  "approved": true\n}'} />
+        </label>
+        <div className="config-info">Use <code>{'{{field}}'}</code> to read earlier input or results. Mapped fields are available to later nodes.</div>
+      </>
+    }
+
+    if (data.kind === 'note') {
+      const update = (patch: Partial<NoteConfig>) => onChange(node.id, {
+        ...data,
+        config: { ...data.config, ...patch },
+        subtitle: patch.text?.trim().slice(0, 45) || 'Workflow note',
+      })
+      return <label className="config-field">
+        <span>Note</span>
+        <textarea rows={8} value={data.config.text}
+          onChange={(event) => update({ text: event.target.value })}
+          placeholder="Explain what this part of the workflow does" />
+      </label>
     }
 
     const update = (patch: Partial<DelayConfig>) => {

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recover a NexFlow workflow</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #100d1d; color: #f3efff; font: 16px system-ui, sans-serif; }
+      main { box-sizing: border-box; width: min(520px, calc(100% - 32px)); padding: 32px; border: 1px solid #453963; border-radius: 16px; background: #1c1730; }
+      h1 { margin: 0 0 12px; font-size: 25px; }
+      p { line-height: 1.55; color: #c6bed7; }
+      button { padding: 12px 18px; border: 0; border-radius: 9px; background: #9d75fa; color: #140b21; font: inherit; font-weight: 700; cursor: pointer; }
+      #status { min-height: 1.5em; }
+      a { color: #cdafff; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Recover a NexFlow workflow</h1>
+      <p>This page exports the most recent workflow saved in this browser on this site address. The file stays on your computer until you choose to import it into NexFlow.</p>
+      <button id="download" type="button">Download local workflow</button>
+      <p id="status" role="status"></p>
+      <p>After downloading, open the <a href="https://nexflow-one.vercel.app/workspace">hosted workspace</a>, click <strong>Import</strong>, select the JSON file, then click <strong>Save</strong>.</p>
+    </main>
+    <script>
+      document.getElementById('download').addEventListener('click', () => {
+        const status = document.getElementById('status');
+        const raw = localStorage.getItem('nexflow:workflow:draft');
+        if (!raw) { status.textContent = 'No local workflow was found at this site address in this browser.'; return; }
+        try {
+          const workflow = JSON.parse(raw);
+          if (workflow.version !== 1 || !Array.isArray(workflow.nodes) || !Array.isArray(workflow.edges)) throw new Error();
+          const copy = { version: 1, name: workflow.name || 'Recovered workflow', updatedAt: workflow.updatedAt || new Date().toISOString(), nodes: workflow.nodes, edges: workflow.edges };
+          const url = URL.createObjectURL(new Blob([JSON.stringify(copy, null, 2)], { type: 'application/json' }));
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'nexflow-recovered-workflow.json';
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          status.textContent = 'Workflow backup downloaded. Import it into the hosted workspace.';
+        } catch {
+          status.textContent = 'The saved browser data is not a valid workflow backup.';
+        }
+      });
+    </script>
+  </body>
+</html>

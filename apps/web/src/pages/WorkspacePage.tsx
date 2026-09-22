@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
   addEdge,
@@ -250,6 +250,16 @@ const nodeTemplates: Record<NodeKind, WorkflowNodeData> = {
       unit: 'seconds',
     },
   },
+  map: {
+    kind: 'map', title: 'Map Data', subtitle: 'Set fields from input',
+    category: 'LOGIC', icon: '≡',
+    config: { assignments: '{\n  "status": "ready"\n}' },
+  },
+  note: {
+    kind: 'note', title: 'Note', subtitle: 'Workflow note',
+    category: 'UTILITY', icon: '✎',
+    config: { text: '' },
+  },
 }
 
 const STORAGE_KEY = 'nexflow:workflow:draft'
@@ -311,6 +321,25 @@ function loadSavedWorkflow(): WorkflowDocument | null {
   }
 }
 
+function validImportedNode(value: unknown): value is WorkflowNode {
+  if (!value || typeof value !== 'object') return false
+  const node = value as Record<string, unknown>
+  if (typeof node.id !== 'string' || !node.data || typeof node.data !== 'object') return false
+  const data = node.data as Record<string, unknown>
+  if (!data.config || typeof data.config !== 'object') return false
+  const config = data.config as Record<string, unknown>
+  switch (data.kind) {
+    case 'webhook': return typeof config.method === 'string' && typeof config.path === 'string'
+    case 'schedule': return typeof config.mode === 'string' && typeof config.timezone === 'string'
+    case 'condition': return typeof config.field === 'string' && typeof config.operator === 'string' && typeof config.value === 'string'
+    case 'http': return typeof config.url === 'string' && typeof config.method === 'string' && typeof config.headers === 'string' && typeof config.body === 'string' && typeof config.timeout === 'number'
+    case 'delay': return typeof config.duration === 'number' && typeof config.unit === 'string'
+    case 'map': return typeof config.assignments === 'string'
+    case 'note': return typeof config.text === 'string'
+    default: return false
+  }
+}
+
 function validateNode(data: WorkflowNodeData) {
   if (data.kind === 'schedule') {
     try { new Intl.DateTimeFormat('en', { timeZone: data.config.timezone }) }
@@ -364,6 +393,16 @@ function validateNode(data: WorkflowNodeData) {
     return null
   }
 
+  if (data.kind === 'map') {
+    try {
+      const parsed: unknown = JSON.parse(data.config.assignments)
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return 'Data mapping must be a JSON object.'
+    } catch { return 'Data mapping must be valid JSON.' }
+    return null
+  }
+
+  if (data.kind === 'note') return null
+
   if (data.config.duration <= 0) {
     return 'Delay duration must be greater than zero.'
   }
@@ -374,6 +413,7 @@ function validateNode(data: WorkflowNodeData) {
 function WorkspacePage() {
   const { workflowId: routeWorkflowId } = useParams()
   const navigate = useNavigate()
+  const importInput = useRef<HTMLInputElement>(null)
 
   const savedWorkflow = useMemo(
     () => routeWorkflowId ? null : loadSavedWorkflow(),
@@ -635,6 +675,52 @@ function WorkspacePage() {
     markUnsaved()
   }
 
+  const exportWorkflow = () => {
+    const backup: WorkflowDocument = {
+      version: 1,
+      name: workflowName.trim() || 'Untitled workflow',
+      updatedAt: new Date().toISOString(),
+      nodes,
+      edges,
+    }
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${backup.name.replace(/[^a-z0-9_-]+/gi, '-').toLowerCase() || 'workflow'}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const importWorkflow = async (file: File) => {
+    try {
+      if (file.size > 2_000_000) throw new Error('Workflow backup is too large.')
+      const parsed: unknown = JSON.parse(await file.text())
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Invalid workflow backup.')
+      const backup = parsed as Partial<WorkflowDocument>
+      if (backup.version !== 1 || typeof backup.name !== 'string' || !Array.isArray(backup.nodes) || !Array.isArray(backup.edges)) {
+        throw new Error('Invalid workflow backup.')
+      }
+      if (backup.nodes.length > 200 || backup.edges.length > 400 ||
+        backup.nodes.some((node) => !validImportedNode(node)) ||
+        backup.edges.some((edge) => !edge || typeof edge.source !== 'string' || typeof edge.target !== 'string')) {
+        throw new Error('Workflow backup contains invalid nodes or connections.')
+      }
+      setNodes(backup.nodes)
+      setEdges(backup.edges)
+      setWorkflowName(backup.name.trim() || 'Imported workflow')
+      setWorkflowId(undefined)
+      setWebhookToken(undefined)
+      setWorkflowRevision(0)
+      setSelectedNodeId(null)
+      setSaveStatus('Imported draft · click Save')
+      setSaveNotice('Workflow imported. Click Save to store it in your account.')
+      navigate('/workspace', { replace: true })
+    } catch (error) {
+      setSaveNotice(error instanceof Error ? error.message : 'Could not import workflow.')
+    }
+  }
+
   const deleteNode = (nodeId: string) => {
     setNodes((currentNodes) => currentNodes.filter((node) => node.id !== nodeId))
     setEdges((currentEdges) => currentEdges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId))
@@ -765,6 +851,18 @@ function WorkspacePage() {
         </div>
 
         <div className="workspace-actions">
+          <input ref={importInput} type="file" accept="application/json,.json" hidden
+            aria-label="Import workflow backup" onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) void importWorkflow(file)
+              event.target.value = ''
+            }} />
+          <button className="workspace-secondary-button" onClick={() => importInput.current?.click()}>
+            Import
+          </button>
+          <button className="workspace-secondary-button" onClick={exportWorkflow}>
+            Export
+          </button>
           <span className="saved-status">
             <span
               className={
@@ -840,6 +938,11 @@ function WorkspacePage() {
               </div>
             </button>
 
+            <button onClick={() => addNode('map')}>
+              <span className="palette-icon blue">≡</span>
+              <div><strong>Map Data</strong><small>Set fields from input</small></div>
+            </button>
+
             <button onClick={() => addNode('delay')}>
               <span className="palette-icon orange">◷</span>
 
@@ -847,6 +950,11 @@ function WorkspacePage() {
                 <strong>Delay</strong>
                 <small>Pause execution</small>
               </div>
+            </button>
+
+            <button onClick={() => addNode('note')}>
+              <span className="palette-icon orange">✎</span>
+              <div><strong>Note</strong><small>Document the workflow</small></div>
             </button>
           </div>
 
